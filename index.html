@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mundial 2026 - Gestor de Resultados</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-tabs button {
+            padding: 12px 24px;
+            border: none;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .nav-tabs button.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .nav-tabs button:hover {
+            transform: translateY(-2px);
+        }
+
+        .section {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+        }
+
+        .group-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .group-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .standings-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .standings-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .standings-table tr:hover {
+            background: #f0f0f0;
+        }
+
+        .match-form {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .match-form .form-row {
+            margin-bottom: 15px;
+        }
+
+        .match-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .match-input input {
+            width: 60px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .vs-text {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .matches-list {
+            margin-top: 20px;
+        }
+
+        .match-item {
+            background: #f8f9fa;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .match-result {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #667eea;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .brackets-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .bracket-round {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .bracket-round-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .bracket-match {
+            background: white;
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #ddd;
+        }
+
+        .team-qualified {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .team-pending {
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        .clear-btn {
+            background: #e74c3c;
+            margin-top: 20px;
+        }
+
+        .clear-btn:hover {
+            background: #c0392b;
+        }
+
+        /* Estilos para Gráficos */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        .chart-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .chart-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            margin-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .top-scorers {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .top-scorers h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .scorer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+
+        .scorer-position {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .scorer-goals {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .group-stats {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .group-stats-header {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .group-stats-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 0.95em;
+        }
+
+        .group-stats-item {
+            display: flex;
+            gap: 8px;
+        }
+
+        .full-width-chart {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .groups-container {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚽ Mundial 2026</h1>
+            <p>Gestor de Resultados y Posiciones</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="tab-btn active" data-tab="resultados">Registrar Resultados</button>
+            <button class="tab-btn" data-tab="posiciones">Tabla de Posiciones</button>
+            <button class="tab-btn" data-tab="estadisticas">Estadísticas y Gráficos</button>
+            <button class="tab-btn" data-tab="cruces">Cuadro de Cruces</button>
+        </div>
+
+        <!-- SECCIÓN: Registrar Resultados -->
+        <div id="resultados" class="section active">
+            <h2>Registrar Resultados de Partidos</h2>
+            
+            <div class="match-form">
+                <h3>Nuevo Partido</h3>
+                
+                <div class="form-group">
+                    <label for="groupSelect">Selecciona el Grupo:</label>
+                    <select id="groupSelect">
+                        <option value="">-- Selecciona un grupo --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="team1Select">Equipo 1:</label>
+                    <select id="team1Select">
+                        <option value="">-- Selecciona equipo --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="team2Select">Equipo 2:</label>
+                    <select id="team2Select">
+                        <option value="">-- Selecciona equipo --</option>
+                    </select>
+                </div>
+
+                <div class="match-input">
+                    <label for="goals1" style="margin: 0; width: auto;">Goles Equipo 1:</label>
+                    <input type="number" id="goals1" min="0" value="0">
+                    <span class="vs-text">VS</span>
+                    <input type="number" id="goals2" min="0" value="0">
+                    <label for="goals2" style="margin: 0; width: auto;">Goles Equipo 2</label>
+                </div>
+
+                <button onclick="registrarPartido()">Registrar Partido</button>
+            </div>
+
+            <div class="matches-list" id="matchesList">
+                <h3>Partidos Registrados</h3>
+                <div id="matchesContent">
+                    <p style="color: #95a5a6;">No hay partidos registrados aún</p>
+                </div>
+            </div>
+
+            <button class="clear-btn" onclick="limpiarTodos()">Limpiar Todo</button>
+        </div>
+
+        <!-- SECCIÓN: Tabla de Posiciones -->
+        <div id="posiciones" class="section">
+            <h2>Tabla de Posiciones</h2>
+            <div id="groupsContent" class="groups-container"></div>
+        </div>
+
+        <!-- SECCIÓN: Estadísticas y Gráficos -->
+        <div id="estadisticas" class="section">
+            <h2>Estadísticas y Gráficos</h2>
+            
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-box">
+                    <div class="stat-value" id="totalMatches">0</div>
+                    <div class="stat-label">Partidos Jugados</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="totalGoals">0</div>
+                    <div class="stat-label">Goles Totales</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="avgGoals">0</div>
+                    <div class="stat-label">Promedio de Goles/Partido</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="maxGoals">0</div>
+                    <div class="stat-label">Máximo Goles en un Partido</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Puntos por Grupo</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="puntosChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Goles por Grupo (Anotados vs Recibidos)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="golesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Victorias, Empates y Derrotas</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="resultadosChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Top 10 Equipos por Puntos</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="topTeamsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card full-width-chart">
+                    <h3>Diferencia de Goles por Equipo (Top 15)</h3>
+                    <div class="chart-wrapper" style="height: 400px;">
+                        <canvas id="diferenciaChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card full-width-chart">
+                    <h3>Top 10 Goleadores</h3>
+                    <div id="topScorersContainer" class="top-scorers"></div>
+                </div>
+
+                <div class="chart-card full-width-chart">
+                    <h3>Estadísticas por Grupo</h3>
+                    <div id="groupStatsContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Cuadro de Cruces -->
+        <div id="cruces" class="section">
+            <h2>Cuadro de Cruces</h2>
+            <div id="bracketsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de grupos y equipos del Mundial 2026
+        const grupos = {
+            'A': ['Mexico', 'South Africa', 'South Korea', 'Czech Republic'],
+            'B': ['Switzerland', 'Canada', 'Qatar', 'Bosnia and Herzegovina'],
+            'C': ['Scotland', 'Morocco', 'Brazil', 'Haiti'],
+            'D': ['United States', 'Australia', 'Türkiye', 'Paraguay'],
+            'E': ['Germany', 'Ivory Coast', 'Ecuador', 'Curacao'],
+            'F': ['Sweden', 'Japan', 'Netherlands', 'Tunisia'],
+            'G': ['New Zealand', 'Iran', 'Belgium', 'Egypt'],
+            'H': ['Uruguay', 'Saudi Arabia', 'Spain', 'Cabo Verde'],
+            'I': ['France', 'Senegal', 'Iraq', 'Norway'],
+            'J': ['Argentina', 'Algeria', 'Austria', 'Jordan'],
+            'K': ['Portugal', 'DR Congo', 'Uzbekistan', 'Colombia'],
+            'L': ['England', 'Croatia', 'Ghana', 'Panama']
+        };
+
+        // Estado de la aplicación
+        let matches = JSON.parse(localStorage.getItem('matches')) || [];
+        let standings = JSON.parse(localStorage.getItem('standings')) || {};
+
+        // Variables para almacenar instancias de gráficos
+        let charts = {
+            puntos: null,
+            goles: null,
+            resultados: null,
+            topTeams: null,
+            diferencia: null
+        };
+
+        // Inicializar
+        function init() {
+            inicializarGrupos();
+            actualizarTablas();
+            cargarPartidos();
+        }
+
+        // ========== FUNCIONES DE GRÁFICOS ==========
+
+        function actualizarEstadisticas() {
+            const totalMatches = matches.length;
+            const totalGoals = matches.reduce((sum, m) => sum + m.goals1 + m.goals2, 0);
+            const avgGoals = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(2) : 0;
+            const maxGoals = matches.length > 0 ? Math.max(...matches.map(m => m.goals1 + m.goals2)) : 0;
+
+            document.getElementById('totalMatches').textContent = totalMatches;
+            document.getElementById('totalGoals').textContent = totalGoals;
+            document.getElementById('avgGoals').textContent = avgGoals;
+            document.getElementById('maxGoals').textContent = maxGoals;
+        }
+
+        function crearGraficoPuntos() {
+            const ctx = document.getElementById('puntosChart').getContext('2d');
+            const gruposOrdenados = Object.keys(grupos).sort();
+            
+            const datos = gruposOrdenados.map(grupo => {
+                const equipos = Object.values(standings[grupo]);
+                const puntos = equipos.reduce((sum, eq) => sum + (eq.wins * 3 + eq.draws), 0);
+                return puntos;
+            });
+
+            if (charts.puntos) charts.puntos.destroy();
+
+            charts.puntos = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: gruposOrdenados.map(g => `Grupo ${g}`),
+                    datasets: [{
+                        label: 'Puntos Totales',
+                        data: datos,
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                            '#00f2fe', '#43e97b', '#fa709a', '#fee140',
+                            '#30cfd0', '#330867', '#a8edea', '#fed6e3'
+                        ],
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function crearGraficoGoles() {
+            const ctx = document.getElementById('golesChart').getContext('2d');
+            const gruposOrdenados = Object.keys(grupos).sort();
+            
+            const golesAnotados = gruposOrdenados.map(grupo => {
+                const equipos = Object.values(standings[grupo]);
+                return equipos.reduce((sum, eq) => sum + eq.goalsFor, 0);
+            });
+
+            const golesRecibidos = gruposOrdenados.map(grupo => {
+                const equipos = Object.values(standings[grupo]);
+                return equipos.reduce((sum, eq) => sum + eq.goalsAgainst, 0);
+            });
+
+            if (charts.goles) charts.goles.destroy();
+
+            charts.goles = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: gruposOrdenados.map(g => `Grupo ${g}`),
+                    datasets: [
+                        {
+                            label: 'Goles Anotados',
+                            data: golesAnotados,
+                            backgroundColor: '#27ae60',
+                            borderRadius: 5
+                        },
+                        {
+                            label: 'Goles Recibidos',
+                            data: golesRecibidos,
+                            backgroundColor: '#e74c3c',
+                            borderRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function crearGraficoResultados() {
+            const ctx = document.getElementById('resultadosChart').getContext('2d');
+            
+            let totalVictorias = 0;
+            let totalEmpates = 0;
+            let totalDerrotas = 0;
+
+            Object.keys(grupos).forEach(grupo => {
+                Object.values(standings[grupo]).forEach(eq => {
+                    totalVictorias += eq.wins;
+                    totalEmpates += eq.draws;
+                    totalDerrotas += eq.losses;
+                });
+            });
+
+            if (charts.resultados) charts.resultados.destroy();
+
+            charts.resultados = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Victorias', 'Empates', 'Derrotas'],
+                    datasets: [{
+                        data: [totalVictorias, totalEmpates, totalDerrotas],
+                        backgroundColor: ['#27ae60', '#f39c12', '#e74c3c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function crearGraficoTopTeams() {
+            const ctx = document.getElementById('topTeamsChart').getContext('2d');
+            
+            const todosEquipos = [];
+            Object.keys(grupos).forEach(grupo => {
+                Object.values(standings[grupo]).forEach(eq => {
+                    todosEquipos.push({
+                        name: eq.name,
+                        points: eq.wins * 3 + eq.draws
+                    });
+                });
+            });
+
+            const top10 = todosEquipos
+                .sort((a, b) => b.points - a.points)
+                .slice(0, 10);
+
+            if (charts.topTeams) charts.topTeams.destroy();
+
+            charts.topTeams = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(t => t.name),
+                    datasets: [{
+                        label: 'Puntos',
+                        data: top10.map(t => t.points),
+                        backgroundColor: '#667eea',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function crearGraficoDiferencia() {
+            const ctx = document.getElementById('diferenciaChart').getContext('2d');
+            
+            const todosEquipos = [];
+            Object.keys(grupos).forEach(grupo => {
+                Object.values(standings[grupo]).forEach(eq => {
+                    todosEquipos.push({
+                        name: eq.name,
+                        diferencia: eq.goalsFor - eq.goalsAgainst
+                    });
+                });
+            });
+
+            const top15 = todosEquipos
+                .sort((a, b) => b.diferencia - a.diferencia)
+                .slice(0, 15);
+
+            const colores = top15.map(t => t.diferencia >= 0 ? '#27ae60' : '#e74c3c');
+
+            if (charts.diferencia) charts.diferencia.destroy();
+
+            charts.diferencia = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top15.map(t => t.name),
+                    datasets: [{
+                        label: 'Diferencia de Goles',
+                        data: top15.map(t => t.diferencia),
+                        backgroundColor: colores,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function actualizarTopGoleadores() {
+            const todosEquipos = [];
+            Object.keys(grupos).forEach(grupo => {
+                Object.values(standings[grupo]).forEach(eq => {
+                    todosEquipos.push({
+                        name: eq.name,
+                        goals: eq.goalsFor
+                    });
+                });
+            });
+
+            const top10 = todosEquipos
+                .sort((a, b) => b.goals - a.goals)
+                .slice(0, 10);
+
+            const html = top10.length > 0 ? top10.map((team, index) => `
+                <div class="scorer-item">
+                    <div style="display: flex; align-items: center; flex: 1;">
+                        <span class="scorer-position">${index + 1}</span>
+                        <span>${team.name}</span>
+                    </div>
+                    <span class="scorer-goals">${team.goals} goles</span>
+                </div>
+            `).join('') : '<p style="text-align: center; color: #95a5a6;">Sin datos aún</p>';
+
+            document.getElementById('topScorersContainer').innerHTML = html;
+        }
+
+        function actualizarEstadisticasGrupos() {
+            const gruposOrdenados = Object.keys(grupos).sort();
+            
+            const html = gruposOrdenados.map(grupo => {
+                const equipos = Object.values(standings[grupo]);
+                const totalPartidos = equipos.reduce((sum, eq) => sum + eq.played, 0) / 2;
+                const totalGoles = equipos.reduce((sum, eq) => sum + eq.goalsFor, 0);
+                const promedio = totalPartidos > 0 ? (totalGoles / totalPartidos).toFixed(2) : 0;
+                
+                return `
+                    <div class="group-stats">
+                        <div class="group-stats-header">Grupo ${grupo}</div>
+                        <div class="group-stats-content">
+                            <div class="group-stats-item">
+                                <span style="color: #667eea; font-weight: bold;">Partidos:</span>
+                                <span>${Math.round(totalPartidos)}</span>
+                            </div>
+                            <div class="group-stats-item">
+                                <span style="color: #667eea; font-weight: bold;">Goles:</span>
+                                <span>${totalGoles}</span>
+                            </div>
+                            <div class="group-stats-item">
+                                <span style="color: #667eea; font-weight: bold;">Promedio:</span>
+                                <span>${promedio} goles/partido</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('groupStatsContainer').innerHTML = html;
+        }
+
+        function actualizarTodosGraficos() {
+            actualizarEstadisticas();
+            crearGraficoPuntos();
+            crearGraficoGoles();
+            crearGraficoResultados();
+            crearGraficoTopTeams();
+            crearGraficoDiferencia();
+            actualizarTopGoleadores();
+            actualizarEstadisticasGrupos();
+        }
+
+        // ========== FUNCIONES DE POSICIONES ==========
+
+        function inicializarGrupos() {
+            Object.keys(grupos).forEach(grupo => {
+                if (!standings[grupo]) {
+                    standings[grupo] = {};
+                    grupos[grupo].forEach(equipo => {
+                        standings[grupo][equipo] = {
+                            name: equipo,
+                            played: 0,
+                            wins: 0,
+                            draws: 0,
+                            losses: 0,
+                            goalsFor: 0,
+                            goalsAgainst: 0
+                        };
+                    });
+                }
+            });
+            guardarDatos();
+            actualizarSelects();
+        }
+
+        function actualizarSelects() {
+            const groupSelect = document.getElementById('groupSelect');
+            groupSelect.innerHTML = '<option value="">-- Selecciona un grupo --</option>';
+            
+            Object.keys(grupos).forEach(grupo => {
+                const option = document.createElement('option');
+                option.value = grupo;
+                option.textContent = `Grupo ${grupo}`;
+                groupSelect.appendChild(option);
+            });
+
+            groupSelect.addEventListener('change', actualizarTeamSelects);
+        }
+
+        function actualizarTeamSelects() {
+            const groupSelect = document.getElementById('groupSelect').value;
+            const team1Select = document.getElementById('team1Select');
+            const team2Select = document.getElementById('team2Select');
+
+            team1Select.innerHTML = '<option value="">-- Selecciona equipo --</option>';
+            team2Select.innerHTML = '<option value="">-- Selecciona equipo --</option>';
+
+            if (groupSelect) {
+                grupos[groupSelect].forEach(equipo => {
+                    const option1 = document.createElement('option');
+                    option1.value = equipo;
+                    option1.textContent = equipo;
+                    team1Select.appendChild(option1);
+
+                    const option2 = document.createElement('option');
+                    option2.value = equipo;
+                    option2.textContent = equipo;
+                    team2Select.appendChild(option2);
+                });
+            }
+        }
+
+        function registrarPartido() {
+            const grupo = document.getElementById('groupSelect').value;
+            const team1 = document.getElementById('team1Select').value;
+            const team2 = document.getElementById('team2Select').value;
+            const goals1 = parseInt(document.getElementById('goals1').value);
+            const goals2 = parseInt(document.getElementById('goals2').value);
+
+            if (!grupo || !team1 || !team2 || team1 === team2) {
+                alert('Por favor completa todos los campos y selecciona equipos diferentes');
+                return;
+            }
+
+            const partido = {
+                id: Date.now(),
+                grupo,
+                team1,
+                team2,
+                goals1,
+                goals2
+            };
+
+            const local = standings[grupo][team1];
+            const visitante = standings[grupo][team2];
+
+            local.played++;
+            visitante.played++;
+            local.goalsFor += goals1;
+            local.goalsAgainst += goals2;
+            visitante.goalsFor += goals2;
+            visitante.goalsAgainst += goals1;
+
+            if (goals1 > goals2) {
+                local.wins++;
+                visitante.losses++;
+            } else if (goals1 < goals2) {
+                visitante.wins++;
+                local.losses++;
+            } else {
+                local.draws++;
+                visitante.draws++;
+            }
+
+            matches.push(partido);
+            guardarDatos();
+            
+            document.getElementById('goals1').value = '0';
+            document.getElementById('goals2').value = '0';
+            
+            cargarPartidos();
+            actualizarTablas();
+            
+            alert('Partido registrado correctamente');
+        }
+
+        function cargarPartidos() {
+            const matchesContent = document.getElementById('matchesContent');
+            if (matches.length === 0) {
+                matchesContent.innerHTML = '<p style="color: #95a5a6;">No hay partidos registrados aún</p>';
+                return;
+            }
+
+            matchesContent.innerHTML = matches.map(partido => `
+                <div class="match-item">
+                    <div>
+                        <strong>Grupo ${partido.grupo}</strong><br>
+                        ${partido.team1} vs ${partido.team2}
+                    </div>
+                    <div class="match-result">
+                        ${partido.goals1} - ${partido.goals2}
+                    </div>
+                    <button class="delete-btn" onclick="eliminarPartido(${partido.id})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function eliminarPartido(id) {
+            const partido = matches.find(m => m.id === id);
+            if (!partido) return;
+
+            const local = standings[partido.grupo][partido.team1];
+            const visitante = standings[partido.grupo][partido.team2];
+
+            local.played--;
+            visitante.played--;
+            local.goalsFor -= partido.goals1;
+            local.goalsAgainst -= partido.goals2;
+            visitante.goalsFor -= partido.goals2;
+            visitante.goalsAgainst -= partido.goals1;
+
+            if (partido.goals1 > partido.goals2) {
+                local.wins--;
+                visitante.losses--;
+            } else if (partido.goals1 < partido.goals2) {
+                visitante.wins--;
+                local.losses--;
+            } else {
+                local.draws--;
+                visitante.draws--;
+            }
+
+            matches = matches.filter(m => m.id !== id);
+            guardarDatos();
+            cargarPartidos();
+            actualizarTablas();
+        }
+
+        function actualizarTablas() {
+            const groupsContent = document.getElementById('groupsContent');
+            
+            groupsContent.innerHTML = Object.keys(grupos).map(grupo => {
+                const equipos = Object.values(standings[grupo])
+                    .sort((a, b) => {
+                        const puntosA = (a.wins * 3) + a.draws;
+                        const puntosB = (b.wins * 3) + b.draws;
+                        if (puntosB !== puntosA) return puntosB - puntosA;
+                        return (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst);
+                    });
+
+                return `
+                    <div class="group-card">
+                        <div class="group-title">Grupo ${grupo}</div>
+                        <table class="standings-table">
+                            <thead>
+                                <tr>
+                                    <th>Equipo</th>
+                                    <th>PJ</th>
+                                    <th>G</th>
+                                    <th>E</th>
+                                    <th>P</th>
+                                    <th>GF</th>
+                                    <th>GC</th>
+                                    <th>Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${equipos.map((equipo, index) => {
+                                    const puntos = (equipo.wins * 3) + equipo.draws;
+                                    const diferencia = equipo.goalsFor - equipo.goalsAgainst;
+                                    return `
+                                        <tr style="${index < 2 ? 'background: #e8f5e9;' : ''}">
+                                            <td>${index < 2 ? '✓ ' : ''}${equipo.name}</td>
+                                            <td>${equipo.played}</td>
+                                            <td>${equipo.wins}</td>
+                                            <td>${equipo.draws}</td>
+                                            <td>${equipo.losses}</td>
+                                            <td>${equipo.goalsFor}</td>
+                                            <td>${equipo.goalsAgainst}</td>
+                                            <td><strong>${puntos}</strong></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== FUNCIONES DE CUADRO DE CRUCES ==========
+
+        function obtenerEquiposOrdenados() {
+            const equiposPorGrupo = {};
+            
+            Object.keys(grupos).forEach(grupo => {
+                const equipos = Object.values(standings[grupo])
+                    .sort((a, b) => {
+                        const puntosA = (a.wins * 3) + a.draws;
+                        const puntosB = (b.wins * 3) + b.draws;
+                        if (puntosB !== puntosA) return puntosB - puntosA;
+                        return (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst);
+                    });
+
+                equiposPorGrupo[grupo] = {
+                    primero: equipos[0] ? equipos[0].name : 'Por definirse',
+                    segundo: equipos[1] ? equipos[1].name : 'Por definirse',
+                    tercero: equipos[2] ? equipos[2].name : 'Por definirse'
+                };
+            });
+
+            return equiposPorGrupo;
+        }
+
+        function actualizarBrackets() {
+            const equipos = obtenerEquiposOrdenados();
+            const bracketsContent = document.getElementById('bracketsContent');
+
+            // Emparejamientos de dieciseisavos
+            const dieciseisavos = [
+                { num: 1, eq1: `${equipos.A.primero} (1A)`, eq2: `${equipos.B.segundo} (2B)` },
+                { num: 2, eq1: `${equipos.B.primero} (1B)`, eq2: `${equipos.A.segundo} (2A)` },
+                { num: 3, eq1: `${equipos.C.primero} (1C)`, eq2: `${equipos.D.segundo} (2D)` },
+                { num: 4, eq1: `${equipos.D.primero} (1D)`, eq2: `${equipos.C.segundo} (2C)` },
+                { num: 5, eq1: `${equipos.E.primero} (1E)`, eq2: `${equipos.F.segundo} (2F)` },
+                { num: 6, eq1: `${equipos.F.primero} (1F)`, eq2: `${equipos.E.segundo} (2E)` },
+                { num: 7, eq1: `${equipos.G.primero} (1G)`, eq2: `${equipos.H.segundo} (2H)` },
+                { num: 8, eq1: `${equipos.H.primero} (1H)`, eq2: `${equipos.G.segundo} (2G)` },
+                { num: 9, eq1: `${equipos.I.primero} (1I)`, eq2: `${equipos.J.segundo} (2J)` },
+                { num: 10, eq1: `${equipos.J.primero} (1J)`, eq2: `${equipos.I.segundo} (2I)` },
+                { num: 11, eq1: `${equipos.K.primero} (1K)`, eq2: `${equipos.L.segundo} (2L)` },
+                { num: 12, eq1: `${equipos.L.primero} (1L)`, eq2: `${equipos.K.segundo} (2K)` },
+                { num: 13, eq1: `${equipos.B.segundo} (2B)`, eq2: 'Mejor 3° #1' },
+                { num: 14, eq1: `${equipos.A.segundo} (2A)`, eq2: 'Mejor 3° #2' },
+                { num: 15, eq1: `${equipos.D.segundo} (2D)`, eq2: 'Mejor 3° #3' },
+                { num: 16, eq1: `${equipos.C.segundo} (2C)`, eq2: 'Mejor 3° #4' }
+            ];
+
+            let html = `
+                <div style="margin-bottom: 40px;">
+                    <h3>⚽ Dieciseisavos de Final (16 partidos)</h3>
+                    <div class="brackets-container">
+                        ${dieciseisavos.map(partido => `
+                            <div class="bracket-round">
+                                <div class="bracket-round-title">16vos #${partido.num}</div>
+                                <div class="bracket-match">
+                                    <div class="team-qualified">${partido.eq1}</div>
+                                    <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                    <div class="team-qualified">${partido.eq2}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 40px;">
+                    <h3>⚽ Octavos de Final (8 partidos)</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Los ganadores de los dieciseisavos avanzan</p>
+                    <div class="brackets-container">
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 1</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #1</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #2</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 2</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #3</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #4</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 3</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #5</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #6</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 4</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #7</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #8</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 5</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #9</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #10</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 6</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #11</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #12</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 7</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #13</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #14</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Octavo 8</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador 16vos #15</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador 16vos #16</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 40px;">
+                    <h3>⚽ Cuartos de Final (4 partidos)</h3>
+                    <div class="brackets-container">
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Cuarto 1</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador Octavo 1</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador Octavo 2</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Cuarto 2</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador Octavo 3</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador Octavo 4</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Cuarto 3</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador Octavo 5</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador Octavo 6</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Cuarto 4</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador Octavo 7</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador Octavo 8</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 40px;">
+                    <h3>⚽ Semifinales (2 partidos)</h3>
+                    <div class="brackets-container">
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Semifinal 1</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador Cuarto 1</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador Cuarto 2</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Semifinal 2</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador Cuarto 3</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Ganador Cuarto 4</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 40px;">
+                    <h3>⚽ Final y Tercer Lugar</h3>
+                    <div class="brackets-container">
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Tercer Lugar</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Perdedor Semifinal 1</div>
+                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                                <div class="team-pending">Perdedor Semifinal 2</div>
+                            </div>
+                        </div>
+                        <div class="bracket-round" style="background: #fff9e6; border-left-color: #f39c12;">
+                            <div class="bracket-round-title" style="color: #f39c12;">🏆 GRAN FINAL 🏆</div>
+                            <div class="bracket-match">
+                                <div class="team-pending">Ganador Semifinal 1</div>
+                                <div style="text-align: center; color: #f39c12; margin: 5px 0; font-weight: bold;">VS</div>
+                                <div class="team-pending">Ganador Semifinal 2</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            bracketsContent.innerHTML = html;
+        }
+
+        function guardarDatos() {
+            localStorage.setItem('matches', JSON.stringify(matches));
+            localStorage.setItem('standings', JSON.stringify(standings));
+        }
+
+        function limpiarTodos() {
+            if (confirm('¿Estás seguro de que deseas limpiar todos los datos? Esta acción no se puede deshacer.')) {
+                matches = [];
+                standings = {};
+                init();
+                cargarPartidos();
+                alert('Todos los datos han sido eliminados');
+            }
+        }
+
+        // Configurar navegación de pestañas
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+
+                if (this.dataset.tab === 'posiciones') {
+                    actualizarTablas();
+                } else if (this.dataset.tab === 'estadisticas') {
+                    actualizarTodosGraficos();
+                } else if (this.dataset.tab === 'cruces') {
+                    actualizarBrackets();
+                }
+            });
+        });
+
+        // Iniciar la aplicación
+        init();
+    </script>
+</body>
+</html>
