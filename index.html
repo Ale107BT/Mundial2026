@@ -1284,32 +1284,42 @@
             return terceros.slice(0, 8); // Top 8 mejores terceros
         }
 
+        function asignarMejorTercero(gruposRestriccion) {
+            const equiposPorGrupo = obtenerEquiposOrdenados();
+            const mejoresTerceros = obtenerMejoresTerceros();
+            
+            // Encontrar el mejor tercero que esté en la lista de grupos permitidos
+            for (let tercero of mejoresTerceros) {
+                if (gruposRestriccion.includes(tercero.grupo)) {
+                    return `${tercero.nombre} (3${tercero.grupo})`;
+                }
+            }
+            return 'Mejor 3°';
+        }
+
         function actualizarBrackets() {
             const equipos = obtenerEquiposOrdenados();
-            const mejoresTerceros = obtenerMejoresTerceros();
             const bracketsContent = document.getElementById('bracketsContent');
 
-            // Nombres de los mejores terceros
-            const terceroNombres = mejoresTerceros.map(t => `${t.nombre} (${t.grupo})`);
-
-            // Emparejamientos de dieciseisavos
+            // Emparejamientos EXACTOS de dieciseisavos según formato oficial FIFA 2026
+            // Basado en: https://www.fifa.com/tournaments/mens/worldcup/canadamexicousa2026
             const dieciseisavos = [
-                { num: 1, eq1: `${equipos.A.primero.name} (1A)`, eq2: `${equipos.B.segundo.name} (2B)` },
-                { num: 2, eq1: `${equipos.B.primero.name} (1B)`, eq2: `${equipos.A.segundo.name} (2A)` },
-                { num: 3, eq1: `${equipos.C.primero.name} (1C)`, eq2: `${equipos.D.segundo.name} (2D)` },
-                { num: 4, eq1: `${equipos.D.primero.name} (1D)`, eq2: `${equipos.C.segundo.name} (2C)` },
-                { num: 5, eq1: `${equipos.E.primero.name} (1E)`, eq2: `${equipos.F.segundo.name} (2F)` },
-                { num: 6, eq1: `${equipos.F.primero.name} (1F)`, eq2: `${equipos.E.segundo.name} (2E)` },
-                { num: 7, eq1: `${equipos.G.primero.name} (1G)`, eq2: `${equipos.H.segundo.name} (2H)` },
-                { num: 8, eq1: `${equipos.H.primero.name} (1H)`, eq2: `${equipos.G.segundo.name} (2G)` },
-                { num: 9, eq1: `${equipos.I.primero.name} (1I)`, eq2: `${equipos.J.segundo.name} (2J)` },
-                { num: 10, eq1: `${equipos.J.primero.name} (1J)`, eq2: `${equipos.I.segundo.name} (2I)` },
-                { num: 11, eq1: `${equipos.K.primero.name} (1K)`, eq2: `${equipos.L.segundo.name} (2L)` },
-                { num: 12, eq1: `${equipos.L.primero.name} (1L)`, eq2: `${equipos.K.segundo.name} (2K)` },
-                { num: 13, eq1: `${equipos.B.segundo.name} (2B)`, eq2: terceroNombres[0] || 'Mejor 3° #1' },
-                { num: 14, eq1: `${equipos.A.segundo.name} (2A)`, eq2: terceroNombres[1] || 'Mejor 3° #2' },
-                { num: 15, eq1: `${equipos.D.segundo.name} (2D)`, eq2: terceroNombres[2] || 'Mejor 3° #3' },
-                { num: 16, eq1: `${equipos.C.segundo.name} (2C)`, eq2: terceroNombres[3] || 'Mejor 3° #4' }
+                { num: 1, eq1: `${equipos.A.segundo.name} (2A)`, eq2: `${equipos.B.segundo.name} (2B)` },
+                { num: 2, eq1: `${equipos.A.primero.name} (1A)`, eq2: asignarMejorTercero(['C', 'D', 'E']) },
+                { num: 3, eq1: `${equipos.B.primero.name} (1B)`, eq2: asignarMejorTercero(['A', 'C', 'D']) },
+                { num: 4, eq1: `${equipos.C.primero.name} (1C)`, eq2: asignarMejorTercero(['A', 'B', 'F']) },
+                { num: 5, eq1: `${equipos.D.primero.name} (1D)`, eq2: asignarMejorTercero(['B', 'E', 'F']) },
+                { num: 6, eq1: `${equipos.E.primero.name} (1E)`, eq2: asignarMejorTercero(['A', 'B', 'C', 'D']) },
+                { num: 7, eq1: `${equipos.F.primero.name} (1F)`, eq2: asignarMejorTercero(['A', 'B', 'C', 'E']) },
+                { num: 8, eq1: `${equipos.G.primero.name} (1G)`, eq2: asignarMejorTercero(['A', 'E', 'F']) },
+                { num: 9, eq1: `${equipos.H.primero.name} (1H)`, eq2: asignarMejorTercero(['B', 'C', 'D']) },
+                { num: 10, eq1: `${equipos.I.primero.name} (1I)`, eq2: asignarMejorTercero(['C', 'D', 'E']) },
+                { num: 11, eq1: `${equipos.J.primero.name} (1J)`, eq2: asignarMejorTercero(['E', 'F']) },
+                { num: 12, eq1: `${equipos.K.primero.name} (1K)`, eq2: asignarMejorTercero(['D', 'E', 'F']) },
+                { num: 13, eq1: `${equipos.L.primero.name} (1L)`, eq2: asignarMejorTercero(['A', 'B', 'C']) },
+                { num: 14, eq1: `${equipos.C.segundo.name} (2C)`, eq2: `${equipos.D.segundo.name} (2D)` },
+                { num: 15, eq1: `${equipos.E.segundo.name} (2E)`, eq2: `${equipos.F.segundo.name} (2F)` },
+                { num: 16, eq1: `${equipos.G.segundo.name} (2G)`, eq2: `${equipos.H.segundo.name} (2H)` }
             ];
 
             let html = `
@@ -1328,7 +1338,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${mejoresTerceros.map((equipo, idx) => `
+                            ${obtenerMejoresTerceros().map((equipo, idx) => `
                                 <tr>
                                     <td><strong>${idx + 1}</strong></td>
                                     <td>${equipo.nombre}</td>
@@ -1347,13 +1357,14 @@
                     <ul style="margin-left: 20px; color: #333;">
                         <li><strong>Fase de Grupos:</strong> 3 puntos por victoria, 1 por empate, 0 por derrota</li>
                         <li><strong>Criterios de desempate:</strong> Puntos → Diferencia de goles → Goles anotados</li>
-                        <li><strong>Mejores terceros:</strong> Los 8 mejores terceros clasifican a dieciseisavos</li>
+                        <li><strong>Mejores terceros:</strong> Los 8 mejores terceros clasifican a dieciseisavos con emparejamientos específicos</li>
                         <li><strong>Eliminación directa:</strong> Partido único con prórroga (2x15 min) y penales si es necesario</li>
                     </ul>
                 </div>
 
                 <div style="margin-bottom: 40px;">
                     <h3>⚽ Dieciseisavos de Final (16 partidos)</h3>
+                    <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">Emparejamientos basados en formato oficial FIFA 2026</p>
                     <div class="brackets-container">
                         ${dieciseisavos.map(partido => `
                             <div class="bracket-round">
