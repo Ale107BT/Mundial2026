@@ -1144,47 +1144,125 @@
             Object.keys(grupos).forEach(grupo => {
                 const equipos = Object.values(standings[grupo])
                     .sort((a, b) => {
+                        // Criterio 1: Puntos totales
                         const puntosA = (a.wins * 3) + a.draws;
                         const puntosB = (b.wins * 3) + b.draws;
                         if (puntosB !== puntosA) return puntosB - puntosA;
-                        return (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst);
+                        
+                        // Criterio 2: Diferencia de goles
+                        const difA = a.goalsFor - a.goalsAgainst;
+                        const difB = b.goalsFor - b.goalsAgainst;
+                        if (difB !== difA) return difB - difA;
+                        
+                        // Criterio 3: Goles anotados
+                        return b.goalsFor - a.goalsFor;
                     });
 
                 equiposPorGrupo[grupo] = {
-                    primero: equipos[0] ? equipos[0].name : 'Por definirse',
-                    segundo: equipos[1] ? equipos[1].name : 'Por definirse',
-                    tercero: equipos[2] ? equipos[2].name : 'Por definirse'
+                    primero: equipos[0] ? { name: equipos[0].name, data: equipos[0] } : { name: 'Por definirse', data: null },
+                    segundo: equipos[1] ? { name: equipos[1].name, data: equipos[1] } : { name: 'Por definirse', data: null },
+                    tercero: equipos[2] ? { name: equipos[2].name, data: equipos[2] } : { name: 'Por definirse', data: null }
                 };
             });
 
             return equiposPorGrupo;
         }
 
+        function obtenerMejoresTerceros() {
+            const equiposPorGrupo = obtenerEquiposOrdenados();
+            const terceros = [];
+
+            Object.keys(grupos).forEach(grupo => {
+                if (equiposPorGrupo[grupo].tercero.data) {
+                    const equipo = equiposPorGrupo[grupo].tercero.data;
+                    terceros.push({
+                        nombre: equipo.name,
+                        grupo: grupo,
+                        puntos: (equipo.wins * 3) + equipo.draws,
+                        diferencia: equipo.goalsFor - equipo.goalsAgainst,
+                        golesAFavor: equipo.goalsFor
+                    });
+                }
+            });
+
+            // Ordenar por criterios: puntos, diferencia, goles
+            terceros.sort((a, b) => {
+                if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+                if (b.diferencia !== a.diferencia) return b.diferencia - a.diferencia;
+                return b.golesAFavor - a.golesAFavor;
+            });
+
+            return terceros.slice(0, 8); // Top 8 mejores terceros
+        }
+
         function actualizarBrackets() {
             const equipos = obtenerEquiposOrdenados();
+            const mejoresTerceros = obtenerMejoresTerceros();
             const bracketsContent = document.getElementById('bracketsContent');
+
+            // Nombres de los mejores terceros
+            const terceroNombres = mejoresTerceros.map(t => `${t.nombre} (${t.grupo})`);
 
             // Emparejamientos de dieciseisavos
             const dieciseisavos = [
-                { num: 1, eq1: `${equipos.A.primero} (1A)`, eq2: `${equipos.B.segundo} (2B)` },
-                { num: 2, eq1: `${equipos.B.primero} (1B)`, eq2: `${equipos.A.segundo} (2A)` },
-                { num: 3, eq1: `${equipos.C.primero} (1C)`, eq2: `${equipos.D.segundo} (2D)` },
-                { num: 4, eq1: `${equipos.D.primero} (1D)`, eq2: `${equipos.C.segundo} (2C)` },
-                { num: 5, eq1: `${equipos.E.primero} (1E)`, eq2: `${equipos.F.segundo} (2F)` },
-                { num: 6, eq1: `${equipos.F.primero} (1F)`, eq2: `${equipos.E.segundo} (2E)` },
-                { num: 7, eq1: `${equipos.G.primero} (1G)`, eq2: `${equipos.H.segundo} (2H)` },
-                { num: 8, eq1: `${equipos.H.primero} (1H)`, eq2: `${equipos.G.segundo} (2G)` },
-                { num: 9, eq1: `${equipos.I.primero} (1I)`, eq2: `${equipos.J.segundo} (2J)` },
-                { num: 10, eq1: `${equipos.J.primero} (1J)`, eq2: `${equipos.I.segundo} (2I)` },
-                { num: 11, eq1: `${equipos.K.primero} (1K)`, eq2: `${equipos.L.segundo} (2L)` },
-                { num: 12, eq1: `${equipos.L.primero} (1L)`, eq2: `${equipos.K.segundo} (2K)` },
-                { num: 13, eq1: `${equipos.B.segundo} (2B)`, eq2: 'Mejor 3° #1' },
-                { num: 14, eq1: `${equipos.A.segundo} (2A)`, eq2: 'Mejor 3° #2' },
-                { num: 15, eq1: `${equipos.D.segundo} (2D)`, eq2: 'Mejor 3° #3' },
-                { num: 16, eq1: `${equipos.C.segundo} (2C)`, eq2: 'Mejor 3° #4' }
+                { num: 1, eq1: `${equipos.A.primero.name} (1A)`, eq2: `${equipos.B.segundo.name} (2B)` },
+                { num: 2, eq1: `${equipos.B.primero.name} (1B)`, eq2: `${equipos.A.segundo.name} (2A)` },
+                { num: 3, eq1: `${equipos.C.primero.name} (1C)`, eq2: `${equipos.D.segundo.name} (2D)` },
+                { num: 4, eq1: `${equipos.D.primero.name} (1D)`, eq2: `${equipos.C.segundo.name} (2C)` },
+                { num: 5, eq1: `${equipos.E.primero.name} (1E)`, eq2: `${equipos.F.segundo.name} (2F)` },
+                { num: 6, eq1: `${equipos.F.primero.name} (1F)`, eq2: `${equipos.E.segundo.name} (2E)` },
+                { num: 7, eq1: `${equipos.G.primero.name} (1G)`, eq2: `${equipos.H.segundo.name} (2H)` },
+                { num: 8, eq1: `${equipos.H.primero.name} (1H)`, eq2: `${equipos.G.segundo.name} (2G)` },
+                { num: 9, eq1: `${equipos.I.primero.name} (1I)`, eq2: `${equipos.J.segundo.name} (2J)` },
+                { num: 10, eq1: `${equipos.J.primero.name} (1J)`, eq2: `${equipos.I.segundo.name} (2I)` },
+                { num: 11, eq1: `${equipos.K.primero.name} (1K)`, eq2: `${equipos.L.segundo.name} (2L)` },
+                { num: 12, eq1: `${equipos.L.primero.name} (1L)`, eq2: `${equipos.K.segundo.name} (2K)` },
+                { num: 13, eq1: `${equipos.B.segundo.name} (2B)`, eq2: terceroNombres[0] || 'Mejor 3° #1' },
+                { num: 14, eq1: `${equipos.A.segundo.name} (2A)`, eq2: terceroNombres[1] || 'Mejor 3° #2' },
+                { num: 15, eq1: `${equipos.D.segundo.name} (2D)`, eq2: terceroNombres[2] || 'Mejor 3° #3' },
+                { num: 16, eq1: `${equipos.C.segundo.name} (2C)`, eq2: terceroNombres[3] || 'Mejor 3° #4' }
             ];
 
             let html = `
+                <div style="margin-bottom: 40px;">
+                    <h3>📋 Tabla de 8 Mejores Terceros</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Ordenados por: Puntos → Diferencia de Goles → Goles Anotados</p>
+                    <table class="standings-table" style="margin-bottom: 20px;">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Equipo</th>
+                                <th>Grupo</th>
+                                <th>Pts</th>
+                                <th>Dif</th>
+                                <th>GF</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${mejoresTerceros.map((equipo, idx) => `
+                                <tr>
+                                    <td><strong>${idx + 1}</strong></td>
+                                    <td>${equipo.nombre}</td>
+                                    <td>${equipo.grupo}</td>
+                                    <td>${equipo.puntos}</td>
+                                    <td style="color: ${equipo.diferencia >= 0 ? '#27ae60' : '#e74c3c'}">${equipo.diferencia > 0 ? '+' : ''}${equipo.diferencia}</td>
+                                    <td>${equipo.golesAFavor}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-bottom: 40px; background: #f0f4ff; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">
+                    <h3>📌 Información del Torneo</h3>
+                    <ul style="margin-left: 20px; color: #333;">
+                        <li><strong>Fase de Grupos:</strong> 3 puntos por victoria, 1 por empate, 0 por derrota</li>
+                        <li><strong>Criterios de desempate:</strong> Puntos → Diferencia de goles → Goles anotados</li>
+                        <li><strong>Mejores terceros:</strong> Los 8 mejores terceros clasifican a dieciseisavos</li>
+                        <li><strong>Eliminación directa:</strong> Partido único con prórroga (2x15 min) y penales si es necesario</li>
+                    </ul>
+                </div>
+
                 <div style="margin-bottom: 40px;">
                     <h3>⚽ Dieciseisavos de Final (16 partidos)</h3>
                     <div class="brackets-container">
