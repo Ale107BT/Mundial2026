@@ -1300,23 +1300,42 @@
         function actualizarBrackets() {
             const equipos = obtenerEquiposOrdenados();
             const bracketsContent = document.getElementById('bracketsContent');
+            const tercerosPorGrupo = obtenerEquiposOrdenados();
+            
+            // Crear un array para rastrear terceros ya usados
+            const tercerosUsados = [];
+
+            function asignarTerceroUnico(gruposRestriccion) {
+                const equiposPorGrupo = obtenerEquiposOrdenados();
+                const mejoresTerceros = obtenerMejoresTerceros();
+                
+                // Buscar el mejor tercero que:
+                // 1. Esté en los grupos permitidos
+                // 2. No haya sido usado ya
+                for (let tercero of mejoresTerceros) {
+                    if (gruposRestriccion.includes(tercero.grupo) && !tercerosUsados.includes(tercero.nombre)) {
+                        tercerosUsados.push(tercero.nombre);
+                        return `${tercero.nombre} (3${tercero.grupo})`;
+                    }
+                }
+                return 'Mejor 3° (no disponible)';
+            }
 
             // Emparejamientos EXACTOS de dieciseisavos según formato oficial FIFA 2026
-            // Basado en: https://www.fifa.com/tournaments/mens/worldcup/canadamexicousa2026
             const dieciseisavos = [
                 { num: 1, eq1: `${equipos.A.segundo.name} (2A)`, eq2: `${equipos.B.segundo.name} (2B)` },
-                { num: 2, eq1: `${equipos.A.primero.name} (1A)`, eq2: asignarMejorTercero(['C', 'D', 'E']) },
-                { num: 3, eq1: `${equipos.B.primero.name} (1B)`, eq2: asignarMejorTercero(['A', 'C', 'D']) },
-                { num: 4, eq1: `${equipos.C.primero.name} (1C)`, eq2: asignarMejorTercero(['A', 'B', 'F']) },
-                { num: 5, eq1: `${equipos.D.primero.name} (1D)`, eq2: asignarMejorTercero(['B', 'E', 'F']) },
-                { num: 6, eq1: `${equipos.E.primero.name} (1E)`, eq2: asignarMejorTercero(['A', 'B', 'C', 'D']) },
-                { num: 7, eq1: `${equipos.F.primero.name} (1F)`, eq2: asignarMejorTercero(['A', 'B', 'C', 'E']) },
-                { num: 8, eq1: `${equipos.G.primero.name} (1G)`, eq2: asignarMejorTercero(['A', 'E', 'F']) },
-                { num: 9, eq1: `${equipos.H.primero.name} (1H)`, eq2: asignarMejorTercero(['B', 'C', 'D']) },
-                { num: 10, eq1: `${equipos.I.primero.name} (1I)`, eq2: asignarMejorTercero(['C', 'D', 'E']) },
-                { num: 11, eq1: `${equipos.J.primero.name} (1J)`, eq2: asignarMejorTercero(['E', 'F']) },
-                { num: 12, eq1: `${equipos.K.primero.name} (1K)`, eq2: asignarMejorTercero(['D', 'E', 'F']) },
-                { num: 13, eq1: `${equipos.L.primero.name} (1L)`, eq2: asignarMejorTercero(['A', 'B', 'C']) },
+                { num: 2, eq1: `${equipos.A.primero.name} (1A)`, eq2: asignarTerceroUnico(['C', 'D', 'E']) },
+                { num: 3, eq1: `${equipos.B.primero.name} (1B)`, eq2: asignarTerceroUnico(['A', 'C', 'D']) },
+                { num: 4, eq1: `${equipos.C.primero.name} (1C)`, eq2: asignarTerceroUnico(['A', 'B', 'F']) },
+                { num: 5, eq1: `${equipos.D.primero.name} (1D)`, eq2: asignarTerceroUnico(['B', 'E', 'F']) },
+                { num: 6, eq1: `${equipos.E.primero.name} (1E)`, eq2: asignarTerceroUnico(['A', 'B', 'C', 'D']) },
+                { num: 7, eq1: `${equipos.F.primero.name} (1F)`, eq2: asignarTerceroUnico(['A', 'B', 'C', 'E']) },
+                { num: 8, eq1: `${equipos.G.primero.name} (1G)`, eq2: asignarTerceroUnico(['A', 'E', 'F']) },
+                { num: 9, eq1: `${equipos.H.primero.name} (1H)`, eq2: asignarTerceroUnico(['B', 'C', 'D']) },
+                { num: 10, eq1: `${equipos.I.primero.name} (1I)`, eq2: asignarTerceroUnico(['C', 'D', 'E']) },
+                { num: 11, eq1: `${equipos.J.primero.name} (1J)`, eq2: asignarTerceroUnico(['E', 'F']) },
+                { num: 12, eq1: `${equipos.K.primero.name} (1K)`, eq2: asignarTerceroUnico(['D', 'E', 'F']) },
+                { num: 13, eq1: `${equipos.L.primero.name} (1L)`, eq2: asignarTerceroUnico(['A', 'B', 'C']) },
                 { num: 14, eq1: `${equipos.C.segundo.name} (2C)`, eq2: `${equipos.D.segundo.name} (2D)` },
                 { num: 15, eq1: `${equipos.E.segundo.name} (2E)`, eq2: `${equipos.F.segundo.name} (2F)` },
                 { num: 16, eq1: `${equipos.G.segundo.name} (2G)`, eq2: `${equipos.H.segundo.name} (2H)` }
