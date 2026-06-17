@@ -449,6 +449,7 @@
             <button class="tab-btn" data-tab="posiciones">Tabla de Posiciones</button>
             <button class="tab-btn" data-tab="estadisticas">Estadísticas y Gráficos</button>
             <button class="tab-btn" data-tab="cruces">Cuadro de Cruces</button>
+            <button class="tab-btn" data-tab="reglas">Reglas y Formato</button>
         </div>
 
         <!-- SECCIÓN: Registrar Resultados -->
@@ -581,6 +582,94 @@
         <div id="cruces" class="section">
             <h2>Cuadro de Cruces</h2>
             <div id="bracketsContent"></div>
+        </div>
+
+        <!-- SECCIÓN: Reglas y Formato -->
+        <div id="reglas" class="section">
+            <h2>📋 Reglas de Calificación y Formato</h2>
+            
+            <div style="background: #f0f4ff; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin-bottom: 20px;">
+                <h3 style="color: #667eea;">Copa Mundial 2026 - Canadá, México y USA</h3>
+                <p style="color: #555; margin-top: 10px;">Participación histórica de <strong>48 selecciones</strong> en <strong>12 grupos de 4 equipos</strong> cada uno.</p>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e0e0e0;">
+                <h3 style="color: #667eea;">1️⃣ Fase de Grupos</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li><strong>12 grupos:</strong> Cada uno con 4 equipos</li>
+                    <li><strong>Puntos:</strong> 3 por victoria, 1 por empate, 0 por derrota</li>
+                    <li><strong>Partidos por equipo:</strong> 3 (uno contra cada rival del grupo)</li>
+                </ul>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e0e0e0;">
+                <h3 style="color: #667eea;">2️⃣ Clasificación a Dieciseisavos</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li>✅ <strong>2 primeros lugares</strong> de cada grupo (24 equipos)</li>
+                    <li>✅ <strong>8 mejores terceros lugares</strong> de la tabla general (8 equipos)</li>
+                    <li>❌ Total de clasificados: <strong>32 equipos</strong></li>
+                </ul>
+                <p style="color: #666; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;"><em>Los 16 equipos restantes son eliminados del torneo.</em></p>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e0e0e0;">
+                <h3 style="color: #667eea;">3️⃣ Criterios de Desempate (Orden Jerárquico)</h3>
+                <ol style="margin-left: 20px; line-height: 2;">
+                    <li><strong>Puntos totales</strong> en partidos del grupo</li>
+                    <li><strong>Diferencia de goles</strong> en todos los partidos</li>
+                    <li><strong>Goles anotados</strong> en todos los partidos</li>
+                    <li><strong>Puntos en enfrentamiento directo</strong> entre equipos empatados</li>
+                    <li><strong>Diferencia de goles en enfrentamiento directo</strong></li>
+                    <li><strong>Goles anotados en enfrentamiento directo</strong></li>
+                    <li><strong>Fair Play (Juego Limpio)</strong> - Penalización por tarjetas:
+                        <ul style="margin-top: 10px; color: #555;">
+                            <li>🟨 Tarjeta amarilla: -1 punto</li>
+                            <li>🟥 Doble amarilla (roja): -3 puntos</li>
+                            <li>🟥 Roja directa: -4 puntos</li>
+                            <li>🟨🟥 Amarilla + Roja: -5 puntos</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sorteo de la FIFA</strong> (último recurso)</li>
+                </ol>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e0e0e0;">
+                <h3 style="color: #667eea;">4️⃣ Fase de Eliminación Directa</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li>📊 <strong>Dieciseisavos de Final:</strong> 16 partidos (32 → 16 equipos)</li>
+                    <li>📊 <strong>Octavos de Final:</strong> 8 partidos (16 → 8 equipos)</li>
+                    <li>📊 <strong>Cuartos de Final:</strong> 4 partidos (8 → 4 equipos)</li>
+                    <li>📊 <strong>Semifinales:</strong> 2 partidos (4 → 2 equipos)</li>
+                    <li>📊 <strong>Tercer Lugar:</strong> 1 partido</li>
+                    <li>🏆 <strong>Final:</strong> 1 partido (Campeón y Subcampeón)</li>
+                </ul>
+                <p style="color: #666; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;"><strong>Formato:</strong> Partido único. En caso de empate: prórroga (2×15 min) + penales.</p>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e0e0e0;">
+                <h3 style="color: #667eea;">5️⃣ Nuevas Reglas de Juego (2026)</h3>
+                <ul style="margin-left: 20px; line-height: 1.8; color: #555;">
+                    <li><strong>Tiempo de saque (5 segundos):</strong> Jugadores y porteros deben reanudar el juego en 5 segundos exactos en balones parados y saques de meta. Si no lo hacen, el balón pasa al equipo rival.</li>
+                    <li><strong>Pausas de hidratación obligatorias:</strong> 3 minutos a la mitad de cada tiempo (aprox. minuto 22), independientemente del clima.</li>
+                    <li><strong>VAR Ampliado:</strong> El videoarbitraje interviene en más situaciones:
+                        <ul style="margin-top: 10px;">
+                            <li>Corrección de doble amarilla</li>
+                            <li>Saques de esquina mal concedidos</li>
+                            <li>Mayor alcance en decisiones técnicas</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div style="background: #fff9e6; padding: 20px; border-radius: 8px; border-left: 4px solid #f39c12;">
+                <h3 style="color: #f39c12;">⚠️ Notas Importantes</h3>
+                <ul style="margin-left: 20px; color: #666;">
+                    <li>El emparejamiento de dieciseisavos está predefinido por la FIFA basado en posiciones de grupos</li>
+                    <li>El ranking de mejores terceros se calcula comparando a los 12 equipos en tercer lugar</li>
+                    <li>Todos los horarios y lugares de los partidos son establecidos previamente por la FIFA</li>
+                    <li>En caso de violencia o conducta antideportiva, se aplican sanciones adicionales</li>
+                </ul>
+            </div>
         </div>
     </div>
 
