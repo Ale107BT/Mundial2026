@@ -274,6 +274,104 @@
             font-style: italic;
         }
 
+        /* Estilos para Edición de Brackets */
+        .bracket-match-editable {
+            background: #ffffeb !important;
+            border: 2px solid #f39c12 !important;
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.3);
+        }
+
+        .bracket-match-result {
+            background: #e8f5e9;
+            border-left: 4px solid #27ae60;
+        }
+
+        .result-input {
+            width: 45px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            margin: 3px 0;
+        }
+
+        .result-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+        }
+
+        .bracket-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .bracket-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #5568d3;
+        }
+
+        .btn-save {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #229954;
+        }
+
+        .btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #7f8c8d;
+        }
+
+        .penalty-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #ddd;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .team-winner {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .team-loser {
+            color: #e74c3c;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .match-result-final {
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0;
+        }
+
         .clear-btn {
             background: #e74c3c;
             margin-top: 20px;
@@ -693,6 +791,14 @@
         // Estado de la aplicación
         let matches = JSON.parse(localStorage.getItem('matches')) || [];
         let standings = JSON.parse(localStorage.getItem('standings')) || {};
+        let knockoutResults = JSON.parse(localStorage.getItem('knockoutResults')) || {
+            dieciseisavos: {},
+            octavos: {},
+            cuartos: {},
+            semis: {},
+            tercerLugar: {},
+            final: {}
+        };
 
         // Variables para almacenar instancias de gráficos
         let charts = {
@@ -1284,24 +1390,21 @@
             return terceros.slice(0, 8); // Top 8 mejores terceros
         }
 
-        function asignarMejorTercero(gruposRestriccion) {
-            const equiposPorGrupo = obtenerEquiposOrdenados();
-            const mejoresTerceros = obtenerMejoresTerceros();
-            
-            // Encontrar el mejor tercero que esté en la lista de grupos permitidos
-            for (let tercero of mejoresTerceros) {
-                if (gruposRestriccion.includes(tercero.grupo)) {
-                    return `${tercero.nombre} (3${tercero.grupo})`;
-                }
-            }
-            return 'Mejor 3°';
+        // ========== FUNCIONES DE EDICIÓN DE KNOCKOUT ==========
+
+        let editingDieciseisavoPareja = {};
+        let tempInputValues = {};
+
+        function obtenerTodosEquipos() {
+            const equipos = [];
+            Object.values(grupos).forEach(g => {
+                g.forEach(e => { if (!equipos.includes(e)) equipos.push(e); });
+            });
+            return equipos.sort();
         }
 
-        function actualizarBrackets() {
+        function getDieciseisavoPairing(num) {
             const equipos = obtenerEquiposOrdenados();
-            const bracketsContent = document.getElementById('bracketsContent');
-            
-            // Definir las restricciones de terceros según cruces mundial.txt
             const slotsTerceros = [
                 { slot: 2, gruposPermitidos: ['A', 'B', 'C', 'D', 'F'] },
                 { slot: 5, gruposPermitidos: ['C', 'D', 'F', 'G', 'H'] },
@@ -1312,63 +1415,337 @@
                 { slot: 13, gruposPermitidos: ['E', 'F', 'G', 'I', 'J'] },
                 { slot: 15, gruposPermitidos: ['D', 'E', 'I', 'J', 'L'] }
             ];
-
-            // Algoritmo de backtracking para asignar terceros sin repetición
-            function asignarTercerosConBacktracking() {
-                const mejoresTerceros = obtenerMejoresTerceros();
-                const asignacion = new Array(16).fill(null);
-                const usados = new Set();
-
-                function backtrack(slotIdx) {
-                    if (slotIdx === slotsTerceros.length) {
-                        return Array.from(usados).length === slotsTerceros.length;
+            const mejoresTerceros = obtenerMejoresTerceros();
+            const asignacion = new Array(16).fill(null);
+            const usados = new Set();
+            (function backtrack(slotIdx) {
+                if (slotIdx === slotsTerceros.length) return usados.size === slotsTerceros.length;
+                const { slot, gruposPermitidos } = slotsTerceros[slotIdx];
+                for (let t of mejoresTerceros) {
+                    if (gruposPermitidos.includes(t.grupo) && !usados.has(t.nombre)) {
+                        usados.add(t.nombre);
+                        asignacion[slot - 1] = t;
+                        if (backtrack(slotIdx + 1)) return true;
+                        usados.delete(t.nombre);
+                        asignacion[slot - 1] = null;
                     }
-
-                    const { slot, gruposPermitidos } = slotsTerceros[slotIdx];
-                    
-                    // Intentar asignar cada tercero disponible
-                    for (let tercero of mejoresTerceros) {
-                        if (gruposPermitidos.includes(tercero.grupo) && !usados.has(tercero.nombre)) {
-                            usados.add(tercero.nombre);
-                            asignacion[slot - 1] = tercero;
-                            
-                            if (backtrack(slotIdx + 1)) {
-                                return true;
-                            }
-                            
-                            usados.delete(tercero.nombre);
-                            asignacion[slot - 1] = null;
-                        }
-                    }
-                    return false;
                 }
+                return false;
+            })(0);
+            const t = (idx) => asignacion[idx] ? `${asignacion[idx].nombre} (3${asignacion[idx].grupo})` : '3° (pendiente)';
+            const pairings = {
+                1:  { eq1: `${equipos.A.segundo.name} (2A)`, eq2: `${equipos.B.segundo.name} (2B)` },
+                2:  { eq1: `${equipos.E.primero.name} (1E)`, eq2: t(1) },
+                3:  { eq1: `${equipos.F.primero.name} (1F)`, eq2: `${equipos.C.segundo.name} (2C)` },
+                4:  { eq1: `${equipos.C.primero.name} (1C)`, eq2: `${equipos.F.segundo.name} (2F)` },
+                5:  { eq1: `${equipos.I.primero.name} (1I)`, eq2: t(4) },
+                6:  { eq1: `${equipos.E.segundo.name} (2E)`, eq2: `${equipos.I.segundo.name} (2I)` },
+                7:  { eq1: `${equipos.A.primero.name} (1A)`, eq2: t(6) },
+                8:  { eq1: `${equipos.L.primero.name} (1L)`, eq2: t(7) },
+                9:  { eq1: `${equipos.D.primero.name} (1D)`, eq2: t(8) },
+                10: { eq1: `${equipos.G.primero.name} (1G)`, eq2: t(9) },
+                11: { eq1: `${equipos.K.segundo.name} (2K)`, eq2: `${equipos.L.segundo.name} (2L)` },
+                12: { eq1: `${equipos.H.primero.name} (1H)`, eq2: `${equipos.J.segundo.name} (2J)` },
+                13: { eq1: `${equipos.B.primero.name} (1B)`, eq2: t(12) },
+                14: { eq1: `${equipos.J.primero.name} (1J)`, eq2: `${equipos.H.segundo.name} (2H)` },
+                15: { eq1: `${equipos.K.primero.name} (1K)`, eq2: t(14) },
+                16: { eq1: `${equipos.D.segundo.name} (2D)`, eq2: `${equipos.G.segundo.name} (2G)` }
+            };
+            return pairings[num];
+        }
 
-                backtrack(0);
-                return asignacion;
+        function resolverEquipo(ronda, num, esEquipo1) {
+            const md = knockoutResults[ronda]?.[num];
+            const overrideKey = esEquipo1 ? 'team1Override' : 'team2Override';
+            if (md && md[overrideKey]) return md[overrideKey];
+
+            if (ronda === 'dieciseisavos') {
+                const p = getDieciseisavoPairing(num);
+                return esEquipo1 ? p.eq1 : p.eq2;
             }
 
-            // Obtener asignación de terceros
-            const tercerosAsignados = asignarTercerosConBacktracking();
+            const prevMap = {
+                octavos:     { prev: 'dieciseisavos', fn: (n, t1) => t1 ? n * 2 - 1 : n * 2 },
+                cuartos:     { prev: 'octavos',        fn: (n, t1) => t1 ? n * 2 - 1 : n * 2 },
+                semis:       { prev: 'cuartos',        fn: (n, t1) => t1 ? n * 2 - 1 : n * 2 },
+                tercerLugar: { prev: 'semis',          fn: (n, t1) => ({ num: t1 ? 1 : 2, type: 'perdedor' }) },
+                final:       { prev: 'semis',          fn: (n, t1) => ({ num: t1 ? 1 : 2, type: 'ganador' }) }
+            };
+            const info = prevMap[ronda];
+            if (!info) return 'Pendiente';
 
-            // Emparejamientos EXACTOS de dieciseisavos según formato oficial FIFA 2026
-            const dieciseisavos = [
-                { num: 1, eq1: `${equipos.A.segundo.name} (2A)`, eq2: `${equipos.B.segundo.name} (2B)` },
-                { num: 2, eq1: `${equipos.E.primero.name} (1E)`, eq2: tercerosAsignados[1] ? `${tercerosAsignados[1].nombre} (3${tercerosAsignados[1].grupo})` : '3° (pendiente)' },
-                { num: 3, eq1: `${equipos.F.primero.name} (1F)`, eq2: `${equipos.C.segundo.name} (2C)` },
-                { num: 4, eq1: `${equipos.C.primero.name} (1C)`, eq2: `${equipos.F.segundo.name} (2F)` },
-                { num: 5, eq1: `${equipos.I.primero.name} (1I)`, eq2: tercerosAsignados[4] ? `${tercerosAsignados[4].nombre} (3${tercerosAsignados[4].grupo})` : '3° (pendiente)' },
-                { num: 6, eq1: `${equipos.E.segundo.name} (2E)`, eq2: `${equipos.I.segundo.name} (2I)` },
-                { num: 7, eq1: `${equipos.A.primero.name} (1A)`, eq2: tercerosAsignados[6] ? `${tercerosAsignados[6].nombre} (3${tercerosAsignados[6].grupo})` : '3° (pendiente)' },
-                { num: 8, eq1: `${equipos.L.primero.name} (1L)`, eq2: tercerosAsignados[7] ? `${tercerosAsignados[7].nombre} (3${tercerosAsignados[7].grupo})` : '3° (pendiente)' },
-                { num: 9, eq1: `${equipos.D.primero.name} (1D)`, eq2: tercerosAsignados[8] ? `${tercerosAsignados[8].nombre} (3${tercerosAsignados[8].grupo})` : '3° (pendiente)' },
-                { num: 10, eq1: `${equipos.G.primero.name} (1G)`, eq2: tercerosAsignados[9] ? `${tercerosAsignados[9].nombre} (3${tercerosAsignados[9].grupo})` : '3° (pendiente)' },
-                { num: 11, eq1: `${equipos.K.segundo.name} (2K)`, eq2: `${equipos.L.segundo.name} (2L)` },
-                { num: 12, eq1: `${equipos.H.primero.name} (1H)`, eq2: `${equipos.J.segundo.name} (2J)` },
-                { num: 13, eq1: `${equipos.B.primero.name} (1B)`, eq2: tercerosAsignados[12] ? `${tercerosAsignados[12].nombre} (3${tercerosAsignados[12].grupo})` : '3° (pendiente)' },
-                { num: 14, eq1: `${equipos.J.primero.name} (1J)`, eq2: `${equipos.H.segundo.name} (2H)` },
-                { num: 15, eq1: `${equipos.K.primero.name} (1K)`, eq2: tercerosAsignados[14] ? `${tercerosAsignados[14].nombre} (3${tercerosAsignados[14].grupo})` : '3° (pendiente)' },
-                { num: 16, eq1: `${equipos.D.segundo.name} (2D)`, eq2: `${equipos.G.segundo.name} (2G)` }
-            ];
+            const result = info.fn(num, esEquipo1);
+            if (ronda === 'tercerLugar' || ronda === 'final') {
+                const fn = result.type === 'ganador' ? getGanador : getPerdedor;
+                const name = fn(info.prev, result.num);
+                const label = result.type === 'ganador' ? 'Ganador Semifinal' : 'Perdedor Semifinal';
+                return name || `${label} ${result.num}`;
+            }
+
+            const prevNum = result;
+            const prevLabels = { dieciseisavos: '16vos #', octavos: 'Octavo ', cuartos: 'Cuarto ' };
+            const name = getGanador(info.prev, prevNum);
+            return name || `${prevLabels[info.prev] || ''}${prevNum}`;
+        }
+
+        function getGanador(ronda, num) {
+            const md = knockoutResults[ronda]?.[num];
+            if (!md || md.goals1 === null || md.goals1 === undefined) return null;
+            if (md.goals1 > md.goals2) return resolverEquipo(ronda, num, true);
+            if (md.goals2 > md.goals1) return resolverEquipo(ronda, num, false);
+            return null;
+        }
+
+        function getPerdedor(ronda, num) {
+            const md = knockoutResults[ronda]?.[num];
+            if (!md || md.goals1 === null || md.goals1 === undefined) return null;
+            if (md.goals1 > md.goals2) return resolverEquipo(ronda, num, false);
+            if (md.goals2 > md.goals1) return resolverEquipo(ronda, num, true);
+            return null;
+        }
+
+        function capturarInputs() {
+            tempInputValues = {};
+            document.querySelectorAll('.result-input').forEach(inp => {
+                tempInputValues[inp.id] = inp.value;
+            });
+        }
+
+        function restaurarInputs() {
+            setTimeout(() => {
+                Object.keys(tempInputValues).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = tempInputValues[id];
+                });
+            }, 0);
+        }
+
+        function guardarResultadoKnockout(ronda, num) {
+            const g1El = document.getElementById(`ko_${ronda}_${num}_g1`);
+            const g2El = document.getElementById(`ko_${ronda}_${num}_g2`);
+            if (!g1El || !g2El) return;
+            const g1 = parseInt(g1El.value) || 0;
+            const g2 = parseInt(g2El.value) || 0;
+
+            if (g1 === g2) {
+                alert('En fase eliminatoria no puede haber empate. Debe haber un ganador.');
+                return;
+            }
+
+            if (!knockoutResults[ronda]) knockoutResults[ronda] = {};
+            if (!knockoutResults[ronda][num]) knockoutResults[ronda][num] = {};
+
+            knockoutResults[ronda][num].goals1 = g1;
+            knockoutResults[ronda][num].goals2 = g2;
+
+            // Capturar overrides de equipo si existen selects
+            const t1Sel = document.getElementById(`ko_${ronda}_${num}_t1_sel`);
+            const t2Sel = document.getElementById(`ko_${ronda}_${num}_t2_sel`);
+            if (t1Sel && t1Sel.value) knockoutResults[ronda][num].team1Override = t1Sel.value;
+            if (t2Sel && t2Sel.value) knockoutResults[ronda][num].team2Override = t2Sel.value;
+
+            // Para dieciseisavos, capturar selección de pareja
+            if (ronda === 'dieciseisavos') {
+                const p1 = document.getElementById(`ko_dieciseisavos_${num}_p1`);
+                const p2 = document.getElementById(`ko_dieciseisavos_${num}_p2`);
+                if (p1 && p1.value) knockoutResults.dieciseisavos[num].team1Override = p1.value;
+                if (p2 && p2.value) knockoutResults.dieciseisavos[num].team2Override = p2.value;
+                knockoutResults.dieciseisavos[num].override = true;
+                delete editingDieciseisavoPareja[num];
+            }
+
+            guardarDatos();
+            actualizarBrackets();
+        }
+
+        function guardarEquiposKnockout(ronda, num) {
+            const t1Sel = document.getElementById(`ko_${ronda}_${num}_t1_sel`);
+            const t2Sel = document.getElementById(`ko_${ronda}_${num}_t2_sel`);
+            if (!t1Sel || !t2Sel || !t1Sel.value || !t2Sel.value) {
+                alert('Selecciona ambos equipos antes de guardar.');
+                return;
+            }
+            if (!knockoutResults[ronda]) knockoutResults[ronda] = {};
+            if (!knockoutResults[ronda][num]) knockoutResults[ronda][num] = {};
+            knockoutResults[ronda][num].team1Override = t1Sel.value;
+            knockoutResults[ronda][num].team2Override = t2Sel.value;
+            guardarDatos();
+            actualizarBrackets();
+        }
+
+        function editarResultadoKnockout(ronda, num) {
+            if (knockoutResults[ronda]?.[num]) {
+                knockoutResults[ronda][num] = { ...knockoutResults[ronda][num] };
+                delete knockoutResults[ronda][num].goals1;
+                delete knockoutResults[ronda][num].goals2;
+            }
+            guardarDatos();
+            actualizarBrackets();
+        }
+
+        function editarParejaDieciseisavo(num) {
+            capturarInputs();
+            editingDieciseisavoPareja[num] = true;
+            actualizarBrackets();
+            restaurarInputs();
+        }
+
+        function cancelarParejaDieciseisavo(num) {
+            capturarInputs();
+            delete editingDieciseisavoPareja[num];
+            actualizarBrackets();
+            restaurarInputs();
+        }
+
+        function guardarParejaDieciseisavo(num) {
+            const p1 = document.getElementById(`ko_dieciseisavos_${num}_p1`);
+            const p2 = document.getElementById(`ko_dieciseisavos_${num}_p2`);
+            if (!p1 || !p2) return;
+
+            if (!knockoutResults.dieciseisavos) knockoutResults.dieciseisavos = {};
+            if (!knockoutResults.dieciseisavos[num]) knockoutResults.dieciseisavos[num] = {};
+
+            knockoutResults.dieciseisavos[num].team1Override = p1.value;
+            knockoutResults.dieciseisavos[num].team2Override = p2.value;
+            knockoutResults.dieciseisavos[num].override = true;
+            delete editingDieciseisavoPareja[num];
+
+            guardarDatos();
+            actualizarBrackets();
+        }
+
+        function resetearRonda(ronda) {
+            const labels = { dieciseisavos: 'Dieciseisavos', octavos: 'Octavos', cuartos: 'Cuartos', semis: 'Semifinales', tercerLugar: 'Tercer Lugar', final: 'Final' };
+            if (!confirm(`¿Estás seguro de limpiar todos los resultados de ${labels[ronda] || ronda}?`)) return;
+            knockoutResults[ronda] = {};
+            guardarDatos();
+            actualizarBrackets();
+        }
+
+        // ========== FUNCIÓN PRINCIPAL DE BRACKETS ==========
+
+        function actualizarBrackets() {
+            const bracketsContent = document.getElementById('bracketsContent');
+            const allTeams = obtenerTodosEquipos();
+
+            function teamOptions(selected) {
+                return allTeams.map(t => `<option value="${t}" ${t === selected ? 'selected' : ''}>${t}</option>`).join('');
+            }
+
+            function renderDieciseisavoMatch(num) {
+                const md = knockoutResults.dieciseisavos?.[num];
+                const hasResult = md && md.goals1 !== null && md.goals1 !== undefined;
+                const auto = getDieciseisavoPairing(num);
+                const team1 = md?.team1Override || auto.eq1;
+                const team2 = md?.team2Override || auto.eq2;
+
+                if (hasResult) {
+                    const w1 = md.goals1 > md.goals2;
+                    return `<div class="bracket-round">
+                        <div class="bracket-round-title">16vos #${num}</div>
+                        <div class="bracket-match bracket-match-result">
+                            <div class="${w1 ? 'team-winner' : 'team-loser'}">${team1} ${md.goals1}</div>
+                            <div style="text-align:center;margin:5px 0;">VS</div>
+                            <div class="${w1 ? 'team-loser' : 'team-winner'}">${team2} ${md.goals2}</div>
+                            <div class="bracket-actions">
+                                <button class="bracket-btn btn-edit" onclick="editarResultadoKnockout('dieciseisavos',${num})">Editar</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+
+                if (editingDieciseisavoPareja[num]) {
+                    return `<div class="bracket-round">
+                        <div class="bracket-round-title">16vos #${num}</div>
+                        <div class="bracket-match bracket-match-editable">
+                            <div style="margin-bottom:5px;"><select id="ko_dieciseisavos_${num}_p1" class="result-input" style="width:100%;">${teamOptions(team1)}</select></div>
+                            <div style="text-align:center;margin:5px 0;">VS</div>
+                            <div style="margin-bottom:5px;"><select id="ko_dieciseisavos_${num}_p2" class="result-input" style="width:100%;">${teamOptions(team2)}</select></div>
+                            <div class="bracket-actions">
+                                <button class="bracket-btn btn-save" onclick="guardarParejaDieciseisavo(${num})">Guardar Pareja</button>
+                                <button class="bracket-btn btn-cancel" onclick="cancelarParejaDieciseisavo(${num})">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+
+                return `<div class="bracket-round">
+                    <div class="bracket-round-title">16vos #${num}</div>
+                    <div class="bracket-match bracket-match-editable">
+                        <div class="match-result-final">
+                            <input type="number" class="result-input" id="ko_dieciseisavos_${num}_g1" min="0" value="0"> ${team1}
+                        </div>
+                        <div style="text-align:center;margin:5px 0;">VS</div>
+                        <div class="match-result-final">
+                            <input type="number" class="result-input" id="ko_dieciseisavos_${num}_g2" min="0" value="0"> ${team2}
+                        </div>
+                        <div class="bracket-actions">
+                            <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('dieciseisavos',${num})">Guardar Resultado</button>
+                            <button class="bracket-btn btn-edit" onclick="editarParejaDieciseisavo(${num})">Editar Pareja</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            function renderGenericMatch(ronda, num, title) {
+                const md = knockoutResults[ronda]?.[num];
+                const hasResult = md && md.goals1 !== null && md.goals1 !== undefined;
+                let t1 = resolverEquipo(ronda, num, true);
+                let t2 = resolverEquipo(ronda, num, false);
+                const t1Known = t1 && !t1.startsWith('Ganador') && !t1.startsWith('Perdedor') && t1 !== 'Pendiente';
+                const t2Known = t2 && !t2.startsWith('Ganador') && !t2.startsWith('Perdedor') && t2 !== 'Pendiente';
+
+                if (hasResult) {
+                    const w1 = md.goals1 > md.goals2;
+                    return `<div class="bracket-round">
+                        <div class="bracket-round-title">${title}</div>
+                        <div class="bracket-match bracket-match-result">
+                            <div class="${w1 ? 'team-winner' : 'team-loser'}">${t1} ${md.goals1}</div>
+                            <div style="text-align:center;margin:5px 0;">VS</div>
+                            <div class="${w1 ? 'team-loser' : 'team-winner'}">${t2} ${md.goals2}</div>
+                            <div class="bracket-actions">
+                                <button class="bracket-btn btn-edit" onclick="editarResultadoKnockout('${ronda}',${num})">Editar</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+
+                if (t1Known && t2Known) {
+                    return `<div class="bracket-round">
+                        <div class="bracket-round-title">${title}</div>
+                        <div class="bracket-match bracket-match-editable">
+                            <div class="match-result-final">
+                                <input type="number" class="result-input" id="ko_${ronda}_${num}_g1" min="0" value="0"> ${t1}
+                            </div>
+                            <div style="text-align:center;margin:5px 0;">VS</div>
+                            <div class="match-result-final">
+                                <input type="number" class="result-input" id="ko_${ronda}_${num}_g2" min="0" value="0"> ${t2}
+                            </div>
+                            <div class="bracket-actions">
+                                <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('${ronda}',${num})">Guardar Resultado</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+
+                return `<div class="bracket-round">
+                    <div class="bracket-round-title">${title}</div>
+                    <div class="bracket-match bracket-match-editable">
+                        <div style="margin-bottom:5px;"><select id="ko_${ronda}_${num}_t1_sel" class="result-input" style="width:100%;"><option value="">${t1}</option>${teamOptions(md?.team1Override)}</select></div>
+                        <div style="text-align:center;margin:5px 0;">VS</div>
+                        <div style="margin-bottom:5px;"><select id="ko_${ronda}_${num}_t2_sel" class="result-input" style="width:100%;"><option value="">${t2}</option>${teamOptions(md?.team2Override)}</select></div>
+                        <div style="margin-top:8px;">
+                            <input type="number" class="result-input" id="ko_${ronda}_${num}_g1" min="0" value="0" placeholder="Goles" style="width:45px;">
+                            <span style="margin:0 5px;">-</span>
+                            <input type="number" class="result-input" id="ko_${ronda}_${num}_g2" min="0" value="0" placeholder="Goles" style="width:45px;">
+                        </div>
+                        <div class="bracket-actions">
+                            <button class="bracket-btn btn-save" onclick="guardarEquiposKnockout('${ronda}',${num})">Guardar Equipos</button>
+                            <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('${ronda}',${num})">Guardar Resultado</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
 
             let html = `
                 <div style="margin-bottom: 40px;">
@@ -1411,171 +1788,112 @@
                 </div>
 
                 <div style="margin-bottom: 40px;">
-                    <h3>⚽ Dieciseisavos de Final (16 partidos)</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <h3 style="margin:0;">⚽ Dieciseisavos de Final (16 partidos)</h3>
+                        <button class="bracket-btn btn-cancel" onclick="resetearRonda('dieciseisavos')" style="font-size:11px;">Limpiar todo</button>
+                    </div>
                     <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">Emparejamientos basados en formato oficial FIFA 2026</p>
                     <div class="brackets-container">
-                        ${dieciseisavos.map(partido => `
-                            <div class="bracket-round">
-                                <div class="bracket-round-title">16vos #${partido.num}</div>
-                                <div class="bracket-match">
-                                    <div class="team-qualified">${partido.eq1}</div>
-                                    <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                    <div class="team-qualified">${partido.eq2}</div>
-                                </div>
-                            </div>
-                        `).join('')}
+                        ${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(n => renderDieciseisavoMatch(n)).join('')}
                     </div>
                 </div>
 
                 <div style="margin-bottom: 40px;">
-                    <h3>⚽ Octavos de Final (8 partidos)</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <h3 style="margin:0;">⚽ Octavos de Final (8 partidos)</h3>
+                        <button class="bracket-btn btn-cancel" onclick="resetearRonda('octavos')" style="font-size:11px;">Limpiar todo</button>
+                    </div>
                     <p style="color: #666; margin-bottom: 15px;">Los ganadores de los dieciseisavos avanzan</p>
                     <div class="brackets-container">
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 1</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #1</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #2</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 2</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #3</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #4</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 3</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #5</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #6</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 4</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #7</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #8</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 5</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #9</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #10</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 6</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #11</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #12</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 7</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #13</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #14</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Octavo 8</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador 16vos #15</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador 16vos #16</div>
-                            </div>
-                        </div>
+                        ${renderGenericMatch('octavos',1,'Octavo 1')}
+                        ${renderGenericMatch('octavos',2,'Octavo 2')}
+                        ${renderGenericMatch('octavos',3,'Octavo 3')}
+                        ${renderGenericMatch('octavos',4,'Octavo 4')}
+                        ${renderGenericMatch('octavos',5,'Octavo 5')}
+                        ${renderGenericMatch('octavos',6,'Octavo 6')}
+                        ${renderGenericMatch('octavos',7,'Octavo 7')}
+                        ${renderGenericMatch('octavos',8,'Octavo 8')}
                     </div>
                 </div>
 
                 <div style="margin-bottom: 40px;">
-                    <h3>⚽ Cuartos de Final (4 partidos)</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <h3 style="margin:0;">⚽ Cuartos de Final (4 partidos)</h3>
+                        <button class="bracket-btn btn-cancel" onclick="resetearRonda('cuartos')" style="font-size:11px;">Limpiar todo</button>
+                    </div>
                     <div class="brackets-container">
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Cuarto 1</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador Octavo 1</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador Octavo 2</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Cuarto 2</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador Octavo 3</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador Octavo 4</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Cuarto 3</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador Octavo 5</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador Octavo 6</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Cuarto 4</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador Octavo 7</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador Octavo 8</div>
-                            </div>
-                        </div>
+                        ${renderGenericMatch('cuartos',1,'Cuarto 1')}
+                        ${renderGenericMatch('cuartos',2,'Cuarto 2')}
+                        ${renderGenericMatch('cuartos',3,'Cuarto 3')}
+                        ${renderGenericMatch('cuartos',4,'Cuarto 4')}
                     </div>
                 </div>
 
                 <div style="margin-bottom: 40px;">
-                    <h3>⚽ Semifinales (2 partidos)</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <h3 style="margin:0;">⚽ Semifinales (2 partidos)</h3>
+                        <button class="bracket-btn btn-cancel" onclick="resetearRonda('semis')" style="font-size:11px;">Limpiar todo</button>
+                    </div>
                     <div class="brackets-container">
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Semifinal 1</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador Cuarto 1</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador Cuarto 2</div>
-                            </div>
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Semifinal 2</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador Cuarto 3</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Ganador Cuarto 4</div>
-                            </div>
-                        </div>
+                        ${renderGenericMatch('semis',1,'Semifinal 1')}
+                        ${renderGenericMatch('semis',2,'Semifinal 2')}
                     </div>
                 </div>
 
                 <div style="margin-bottom: 40px;">
-                    <h3>⚽ Final y Tercer Lugar</h3>
-                    <div class="brackets-container">
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Tercer Lugar</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Perdedor Semifinal 1</div>
-                                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
-                                <div class="team-pending">Perdedor Semifinal 2</div>
-                            </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <h3 style="margin:0;">⚽ Final y Tercer Lugar</h3>
+                        <div>
+                            <button class="bracket-btn btn-cancel" onclick="resetearRonda('tercerLugar')" style="font-size:11px;">Limpiar 3°</button>
+                            <button class="bracket-btn btn-cancel" onclick="resetearRonda('final')" style="font-size:11px;">Limpiar Final</button>
                         </div>
+                    </div>
+                    <div class="brackets-container">
+                        ${renderGenericMatch('tercerLugar',1,'Tercer Lugar')}
                         <div class="bracket-round" style="background: #fff9e6; border-left-color: #f39c12;">
                             <div class="bracket-round-title" style="color: #f39c12;">🏆 GRAN FINAL 🏆</div>
-                            <div class="bracket-match">
-                                <div class="team-pending">Ganador Semifinal 1</div>
-                                <div style="text-align: center; color: #f39c12; margin: 5px 0; font-weight: bold;">VS</div>
-                                <div class="team-pending">Ganador Semifinal 2</div>
-                            </div>
+                            ${(() => {
+                                const mdf = knockoutResults.final?.[1];
+                                const hf = mdf && mdf.goals1 !== null && mdf.goals1 !== undefined;
+                                let ft1 = resolverEquipo('final',1,true);
+                                let ft2 = resolverEquipo('final',1,false);
+                                if (hf) {
+                                    const w1 = mdf.goals1 > mdf.goals2;
+                                    return `<div class="bracket-match bracket-match-result">
+                                        <div class="${w1 ? 'team-winner' : 'team-loser'}" style="font-size:14px;">${ft1} ${mdf.goals1}</div>
+                                        <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">VS</div>
+                                        <div class="${w1 ? 'team-loser' : 'team-winner'}" style="font-size:14px;">${ft2} ${mdf.goals2}</div>
+                                        <div class="bracket-actions">
+                                            <button class="bracket-btn btn-edit" onclick="editarResultadoKnockout('final',1)">Editar</button>
+                                        </div>
+                                    </div>`;
+                                }
+                                const ft1k = ft1 && !ft1.startsWith('Ganador') && !ft1.startsWith('Perdedor') && ft1 !== 'Pendiente';
+                                const ft2k = ft2 && !ft2.startsWith('Ganador') && !ft2.startsWith('Perdedor') && ft2 !== 'Pendiente';
+                                if (ft1k && ft2k) {
+                                    return `<div class="bracket-match bracket-match-editable">
+                                        <div class="match-result-final">
+                                            <input type="number" class="result-input" id="ko_final_1_g1" min="0" value="0" style="font-size:16px;"> ${ft1}
+                                        </div>
+                                        <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">VS</div>
+                                        <div class="match-result-final">
+                                            <input type="number" class="result-input" id="ko_final_1_g2" min="0" value="0" style="font-size:16px;"> ${ft2}
+                                        </div>
+                                        <div class="bracket-actions">
+                                            <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('final',1)">Guardar Resultado</button>
+                                        </div>
+                                    </div>`;
+                                }
+                                return `<div class="bracket-match bracket-match-editable">
+                                    <div style="margin-bottom:5px;"><select id="ko_final_1_t1_sel" class="result-input" style="width:100%;"><option value="">${ft1}</option>${teamOptions()}</select></div>
+                                    <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">VS</div>
+                                    <div style="margin-bottom:5px;"><select id="ko_final_1_t2_sel" class="result-input" style="width:100%;"><option value="">${ft2}</option>${teamOptions()}</select></div>
+                                    <div class="bracket-actions">
+                                        <button class="bracket-btn btn-save" onclick="guardarEquiposKnockout('final',1)">Guardar Equipos</button>
+                                        <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('final',1)">Guardar Resultado</button>
+                                    </div>
+                                </div>`;
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -1587,12 +1905,14 @@
         function guardarDatos() {
             localStorage.setItem('matches', JSON.stringify(matches));
             localStorage.setItem('standings', JSON.stringify(standings));
+            localStorage.setItem('knockoutResults', JSON.stringify(knockoutResults));
         }
 
         function limpiarTodos() {
             if (confirm('¿Estás seguro de que deseas limpiar todos los datos? Esta acción no se puede deshacer.')) {
                 matches = [];
                 standings = {};
+                knockoutResults = { dieciseisavos: {}, octavos: {}, cuartos: {}, semis: {}, tercerLugar: {}, final: {} };
                 init();
                 cargarPartidos();
                 alert('Todos los datos han sido eliminados');
