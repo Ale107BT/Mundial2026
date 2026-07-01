@@ -1493,6 +1493,10 @@
             if (!md || md.goals1 === null || md.goals1 === undefined) return null;
             if (md.goals1 > md.goals2) return resolverEquipo(ronda, num, true);
             if (md.goals2 > md.goals1) return resolverEquipo(ronda, num, false);
+            if (md.penales1 !== undefined && md.penales2 !== undefined) {
+                if (md.penales1 > md.penales2) return resolverEquipo(ronda, num, true);
+                if (md.penales2 > md.penales1) return resolverEquipo(ronda, num, false);
+            }
             return null;
         }
 
@@ -1501,6 +1505,10 @@
             if (!md || md.goals1 === null || md.goals1 === undefined) return null;
             if (md.goals1 > md.goals2) return resolverEquipo(ronda, num, false);
             if (md.goals2 > md.goals1) return resolverEquipo(ronda, num, true);
+            if (md.penales1 !== undefined && md.penales2 !== undefined) {
+                if (md.penales1 > md.penales2) return resolverEquipo(ronda, num, false);
+                if (md.penales2 > md.penales1) return resolverEquipo(ronda, num, true);
+            }
             return null;
         }
 
@@ -1527,9 +1535,18 @@
             const g1 = parseInt(g1El.value) || 0;
             const g2 = parseInt(g2El.value) || 0;
 
+            const p1El = document.getElementById(`ko_${ronda}_${num}_p1`);
+            const p2El = document.getElementById(`ko_${ronda}_${num}_p2`);
+            let p1 = p1El ? parseInt(p1El.value) : undefined;
+            let p2 = p2El ? parseInt(p2El.value) : undefined;
+            if (p1El && isNaN(p1)) p1 = undefined;
+            if (p2El && isNaN(p2)) p2 = undefined;
+
             if (g1 === g2) {
-                alert('En fase eliminatoria no puede haber empate. Debe haber un ganador.');
-                return;
+                if (p1 === undefined || p2 === undefined || p1 === p2) {
+                    alert('El partido terminó empatado. Ingresa el resultado de los penales (deben ser diferentes).');
+                    return;
+                }
             }
 
             if (!knockoutResults[ronda]) knockoutResults[ronda] = {};
@@ -1537,6 +1554,12 @@
 
             knockoutResults[ronda][num].goals1 = g1;
             knockoutResults[ronda][num].goals2 = g2;
+            if (p1 !== undefined) knockoutResults[ronda][num].penales1 = p1;
+            if (p2 !== undefined) knockoutResults[ronda][num].penales2 = p2;
+            if (g1 !== g2) {
+                delete knockoutResults[ronda][num].penales1;
+                delete knockoutResults[ronda][num].penales2;
+            }
 
             // Capturar overrides de equipo si existen selects
             const t1Sel = document.getElementById(`ko_${ronda}_${num}_t1_sel`);
@@ -1578,6 +1601,8 @@
                 knockoutResults[ronda][num] = { ...knockoutResults[ronda][num] };
                 delete knockoutResults[ronda][num].goals1;
                 delete knockoutResults[ronda][num].goals2;
+                delete knockoutResults[ronda][num].penales1;
+                delete knockoutResults[ronda][num].penales2;
             }
             guardarDatos();
             actualizarBrackets();
@@ -1640,13 +1665,15 @@
                 const team2 = md?.team2Override || auto.eq2;
 
                 if (hasResult) {
-                    const w1 = md.goals1 > md.goals2;
+                    const isDraw = md.goals1 === md.goals2 && md.penales1 !== undefined;
+                    const w1 = isDraw ? md.penales1 > md.penales2 : md.goals1 > md.goals2;
+                    const scoreDisplay = isDraw ? `${md.goals1} - ${md.goals2} (${md.penales1}-${md.penales2} pen.)` : `${md.goals1} - ${md.goals2}`;
                     return `<div class="bracket-round">
                         <div class="bracket-round-title">16vos #${num}</div>
                         <div class="bracket-match bracket-match-result">
-                            <div class="${w1 ? 'team-winner' : 'team-loser'}">${team1} ${md.goals1}</div>
-                            <div style="text-align:center;margin:5px 0;">VS</div>
-                            <div class="${w1 ? 'team-loser' : 'team-winner'}">${team2} ${md.goals2}</div>
+                            <div class="${w1 ? 'team-winner' : 'team-loser'}">${team1}</div>
+                            <div style="text-align:center;margin:5px 0;font-weight:bold;">${scoreDisplay}</div>
+                            <div class="${w1 ? 'team-loser' : 'team-winner'}">${team2}</div>
                             <div class="bracket-actions">
                                 <button class="bracket-btn btn-edit" onclick="editarResultadoKnockout('dieciseisavos',${num})">Editar</button>
                             </div>
@@ -1679,6 +1706,12 @@
                         <div class="match-result-final">
                             <input type="number" class="result-input" id="ko_dieciseisavos_${num}_g2" min="0" value="0"> ${team2}
                         </div>
+                        <div class="penalty-section">
+                            ⚽ Penales: <input type="number" class="result-input" id="ko_dieciseisavos_${num}_p1" min="0" value="" placeholder="-" style="width:40px;">
+                            <span style="margin:0 3px;">-</span>
+                            <input type="number" class="result-input" id="ko_dieciseisavos_${num}_p2" min="0" value="" placeholder="-" style="width:40px;">
+                            <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
+                        </div>
                         <div class="bracket-actions">
                             <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('dieciseisavos',${num})">Guardar Resultado</button>
                             <button class="bracket-btn btn-edit" onclick="editarParejaDieciseisavo(${num})">Editar Pareja</button>
@@ -1696,13 +1729,15 @@
                 const t2Known = t2 && !t2.startsWith('Ganador') && !t2.startsWith('Perdedor') && t2 !== 'Pendiente';
 
                 if (hasResult) {
-                    const w1 = md.goals1 > md.goals2;
+                    const isDraw = md.goals1 === md.goals2 && md.penales1 !== undefined;
+                    const w1 = isDraw ? md.penales1 > md.penales2 : md.goals1 > md.goals2;
+                    const scoreDisplay = isDraw ? `${md.goals1} - ${md.goals2} (${md.penales1}-${md.penales2} pen.)` : `${md.goals1} - ${md.goals2}`;
                     return `<div class="bracket-round">
                         <div class="bracket-round-title">${title}</div>
                         <div class="bracket-match bracket-match-result">
-                            <div class="${w1 ? 'team-winner' : 'team-loser'}">${t1} ${md.goals1}</div>
-                            <div style="text-align:center;margin:5px 0;">VS</div>
-                            <div class="${w1 ? 'team-loser' : 'team-winner'}">${t2} ${md.goals2}</div>
+                            <div class="${w1 ? 'team-winner' : 'team-loser'}">${t1}</div>
+                            <div style="text-align:center;margin:5px 0;font-weight:bold;">${scoreDisplay}</div>
+                            <div class="${w1 ? 'team-loser' : 'team-winner'}">${t2}</div>
                             <div class="bracket-actions">
                                 <button class="bracket-btn btn-edit" onclick="editarResultadoKnockout('${ronda}',${num})">Editar</button>
                             </div>
@@ -1721,6 +1756,12 @@
                             <div class="match-result-final">
                                 <input type="number" class="result-input" id="ko_${ronda}_${num}_g2" min="0" value="0"> ${t2}
                             </div>
+                            <div class="penalty-section">
+                                ⚽ Penales: <input type="number" class="result-input" id="ko_${ronda}_${num}_p1" min="0" value="" placeholder="-" style="width:40px;">
+                                <span style="margin:0 3px;">-</span>
+                                <input type="number" class="result-input" id="ko_${ronda}_${num}_p2" min="0" value="" placeholder="-" style="width:40px;">
+                                <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
+                            </div>
                             <div class="bracket-actions">
                                 <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('${ronda}',${num})">Guardar Resultado</button>
                             </div>
@@ -1738,6 +1779,12 @@
                             <input type="number" class="result-input" id="ko_${ronda}_${num}_g1" min="0" value="0" placeholder="Goles" style="width:45px;">
                             <span style="margin:0 5px;">-</span>
                             <input type="number" class="result-input" id="ko_${ronda}_${num}_g2" min="0" value="0" placeholder="Goles" style="width:45px;">
+                        </div>
+                        <div class="penalty-section">
+                            ⚽ Penales: <input type="number" class="result-input" id="ko_${ronda}_${num}_p1" min="0" value="" placeholder="-" style="width:40px;">
+                            <span style="margin:0 3px;">-</span>
+                            <input type="number" class="result-input" id="ko_${ronda}_${num}_p2" min="0" value="" placeholder="-" style="width:40px;">
+                            <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
                         </div>
                         <div class="bracket-actions">
                             <button class="bracket-btn btn-save" onclick="guardarEquiposKnockout('${ronda}',${num})">Guardar Equipos</button>
@@ -1858,11 +1905,13 @@
                                 let ft1 = resolverEquipo('final',1,true);
                                 let ft2 = resolverEquipo('final',1,false);
                                 if (hf) {
-                                    const w1 = mdf.goals1 > mdf.goals2;
+                                    const isDrawF = mdf.goals1 === mdf.goals2 && mdf.penales1 !== undefined;
+                                    const w1f = isDrawF ? mdf.penales1 > mdf.penales2 : mdf.goals1 > mdf.goals2;
+                                    const scoreDisplayF = isDrawF ? `${mdf.goals1} - ${mdf.goals2} (${mdf.penales1}-${mdf.penales2} pen.)` : `${mdf.goals1} - ${mdf.goals2}`;
                                     return `<div class="bracket-match bracket-match-result">
-                                        <div class="${w1 ? 'team-winner' : 'team-loser'}" style="font-size:14px;">${ft1} ${mdf.goals1}</div>
-                                        <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">VS</div>
-                                        <div class="${w1 ? 'team-loser' : 'team-winner'}" style="font-size:14px;">${ft2} ${mdf.goals2}</div>
+                                        <div class="${w1f ? 'team-winner' : 'team-loser'}" style="font-size:14px;">${ft1}</div>
+                                        <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">${scoreDisplayF}</div>
+                                        <div class="${w1f ? 'team-loser' : 'team-winner'}" style="font-size:14px;">${ft2}</div>
                                         <div class="bracket-actions">
                                             <button class="bracket-btn btn-edit" onclick="editarResultadoKnockout('final',1)">Editar</button>
                                         </div>
@@ -1879,6 +1928,12 @@
                                         <div class="match-result-final">
                                             <input type="number" class="result-input" id="ko_final_1_g2" min="0" value="0" style="font-size:16px;"> ${ft2}
                                         </div>
+                                        <div class="penalty-section">
+                                            ⚽ Penales: <input type="number" class="result-input" id="ko_final_1_p1" min="0" value="" placeholder="-" style="width:40px;">
+                                            <span style="margin:0 3px;">-</span>
+                                            <input type="number" class="result-input" id="ko_final_1_p2" min="0" value="" placeholder="-" style="width:40px;">
+                                            <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
+                                        </div>
                                         <div class="bracket-actions">
                                             <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('final',1)">Guardar Resultado</button>
                                         </div>
@@ -1888,6 +1943,17 @@
                                     <div style="margin-bottom:5px;"><select id="ko_final_1_t1_sel" class="result-input" style="width:100%;"><option value="">${ft1}</option>${teamOptions()}</select></div>
                                     <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">VS</div>
                                     <div style="margin-bottom:5px;"><select id="ko_final_1_t2_sel" class="result-input" style="width:100%;"><option value="">${ft2}</option>${teamOptions()}</select></div>
+                                    <div style="margin-top:8px;">
+                                        <input type="number" class="result-input" id="ko_final_1_g1" min="0" value="0" placeholder="Goles" style="width:45px;">
+                                        <span style="margin:0 5px;">-</span>
+                                        <input type="number" class="result-input" id="ko_final_1_g2" min="0" value="0" placeholder="Goles" style="width:45px;">
+                                    </div>
+                                    <div class="penalty-section">
+                                        ⚽ Penales: <input type="number" class="result-input" id="ko_final_1_p1" min="0" value="" placeholder="-" style="width:40px;">
+                                        <span style="margin:0 3px;">-</span>
+                                        <input type="number" class="result-input" id="ko_final_1_p2" min="0" value="" placeholder="-" style="width:40px;">
+                                        <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
+                                    </div>
                                     <div class="bracket-actions">
                                         <button class="bracket-btn btn-save" onclick="guardarEquiposKnockout('final',1)">Guardar Equipos</button>
                                         <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('final',1)">Guardar Resultado</button>
