@@ -1535,8 +1535,8 @@
             const g1 = parseInt(g1El.value) || 0;
             const g2 = parseInt(g2El.value) || 0;
 
-            const p1El = document.getElementById(`ko_${ronda}_${num}_p1`);
-            const p2El = document.getElementById(`ko_${ronda}_${num}_p2`);
+            const p1El = document.getElementById(`ko_${ronda}_${num}_pen1`);
+            const p2El = document.getElementById(`ko_${ronda}_${num}_pen2`);
             let p1 = p1El ? parseInt(p1El.value) : undefined;
             let p2 = p2El ? parseInt(p2El.value) : undefined;
             if (p1El && isNaN(p1)) p1 = undefined;
@@ -1639,6 +1639,35 @@
             actualizarBrackets();
         }
 
+        let editingEquiposOverride = {};
+
+        function editarEquiposOverride(ronda, num) {
+            capturarInputs();
+            editingEquiposOverride[ronda + '_' + num] = true;
+            actualizarBrackets();
+            restaurarInputs();
+        }
+
+        function cancelarEquiposOverride(ronda, num) {
+            capturarInputs();
+            delete editingEquiposOverride[ronda + '_' + num];
+            actualizarBrackets();
+            restaurarInputs();
+        }
+
+        function guardarEquiposOverride(ronda, num) {
+            const t1Sel = document.getElementById(`ko_${ronda}_${num}_t1_ovr`);
+            const t2Sel = document.getElementById(`ko_${ronda}_${num}_t2_ovr`);
+            if (!t1Sel || !t2Sel) return;
+            if (!knockoutResults[ronda]) knockoutResults[ronda] = {};
+            if (!knockoutResults[ronda][num]) knockoutResults[ronda][num] = {};
+            knockoutResults[ronda][num].team1Override = t1Sel.value || undefined;
+            knockoutResults[ronda][num].team2Override = t2Sel.value || undefined;
+            delete editingEquiposOverride[ronda + '_' + num];
+            guardarDatos();
+            actualizarBrackets();
+        }
+
         function resetearRonda(ronda) {
             const labels = { dieciseisavos: 'Dieciseisavos', octavos: 'Octavos', cuartos: 'Cuartos', semis: 'Semifinales', tercerLugar: 'Tercer Lugar', final: 'Final' };
             if (!confirm(`¿Estás seguro de limpiar todos los resultados de ${labels[ronda] || ronda}?`)) return;
@@ -1707,9 +1736,9 @@
                             <input type="number" class="result-input" id="ko_dieciseisavos_${num}_g2" min="0" value="0"> ${team2}
                         </div>
                         <div class="penalty-section">
-                            ⚽ Penales: <input type="number" class="result-input" id="ko_dieciseisavos_${num}_p1" min="0" value="" placeholder="-" style="width:40px;">
+                            ⚽ Penales: <input type="number" class="result-input" id="ko_dieciseisavos_${num}_pen1" min="0" value="" placeholder="-" style="width:40px;">
                             <span style="margin:0 3px;">-</span>
-                            <input type="number" class="result-input" id="ko_dieciseisavos_${num}_p2" min="0" value="" placeholder="-" style="width:40px;">
+                            <input type="number" class="result-input" id="ko_dieciseisavos_${num}_pen2" min="0" value="" placeholder="-" style="width:40px;">
                             <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
                         </div>
                         <div class="bracket-actions">
@@ -1746,6 +1775,35 @@
                 }
 
                 if (t1Known && t2Known) {
+                    const isEditing = editingEquiposOverride[ronda + '_' + num];
+                    if (isEditing) {
+                        return `<div class="bracket-round">
+                            <div class="bracket-round-title">${title}</div>
+                            <div class="bracket-match bracket-match-editable">
+                                <div style="margin-bottom:5px;"><select id="ko_${ronda}_${num}_t1_ovr" class="result-input" style="width:100%;">${teamOptions(t1)}</select></div>
+                                <div style="text-align:center;margin:5px 0;">VS</div>
+                                <div style="margin-bottom:5px;"><select id="ko_${ronda}_${num}_t2_ovr" class="result-input" style="width:100%;">${teamOptions(t2)}</select></div>
+                                <div class="match-result-final" style="margin-top:8px;">
+                                    <input type="number" class="result-input" id="ko_${ronda}_${num}_g1" min="0" value="0"> Goles
+                                </div>
+                                <div style="text-align:center;margin:5px 0;">VS</div>
+                                <div class="match-result-final">
+                                    <input type="number" class="result-input" id="ko_${ronda}_${num}_g2" min="0" value="0"> Goles
+                                </div>
+                                <div class="penalty-section">
+                                    ⚽ Penales: <input type="number" class="result-input" id="ko_${ronda}_${num}_pen1" min="0" value="" placeholder="-" style="width:40px;">
+                                    <span style="margin:0 3px;">-</span>
+                                    <input type="number" class="result-input" id="ko_${ronda}_${num}_pen2" min="0" value="" placeholder="-" style="width:40px;">
+                                    <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
+                                </div>
+                                <div class="bracket-actions">
+                                    <button class="bracket-btn btn-save" onclick="guardarEquiposOverride('${ronda}',${num})">Guardar Equipos</button>
+                                    <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('${ronda}',${num})">Guardar Resultado</button>
+                                    <button class="bracket-btn btn-cancel" onclick="cancelarEquiposOverride('${ronda}',${num})">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
                     return `<div class="bracket-round">
                         <div class="bracket-round-title">${title}</div>
                         <div class="bracket-match bracket-match-editable">
@@ -1757,13 +1815,14 @@
                                 <input type="number" class="result-input" id="ko_${ronda}_${num}_g2" min="0" value="0"> ${t2}
                             </div>
                             <div class="penalty-section">
-                                ⚽ Penales: <input type="number" class="result-input" id="ko_${ronda}_${num}_p1" min="0" value="" placeholder="-" style="width:40px;">
+                                ⚽ Penales: <input type="number" class="result-input" id="ko_${ronda}_${num}_pen1" min="0" value="" placeholder="-" style="width:40px;">
                                 <span style="margin:0 3px;">-</span>
-                                <input type="number" class="result-input" id="ko_${ronda}_${num}_p2" min="0" value="" placeholder="-" style="width:40px;">
+                                <input type="number" class="result-input" id="ko_${ronda}_${num}_pen2" min="0" value="" placeholder="-" style="width:40px;">
                                 <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
                             </div>
                             <div class="bracket-actions">
                                 <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('${ronda}',${num})">Guardar Resultado</button>
+                                <button class="bracket-btn btn-edit" onclick="editarEquiposOverride('${ronda}',${num})">Editar Equipos</button>
                             </div>
                         </div>
                     </div>`;
@@ -1920,6 +1979,32 @@
                                 const ft1k = ft1 && !ft1.startsWith('Ganador') && !ft1.startsWith('Perdedor') && ft1 !== 'Pendiente';
                                 const ft2k = ft2 && !ft2.startsWith('Ganador') && !ft2.startsWith('Perdedor') && ft2 !== 'Pendiente';
                                 if (ft1k && ft2k) {
+                                    const isEditingF = editingEquiposOverride['final_1'];
+                                    if (isEditingF) {
+                                        return `<div class="bracket-match bracket-match-editable">
+                                            <div style="margin-bottom:5px;"><select id="ko_final_1_t1_ovr" class="result-input" style="width:100%;">${teamOptions(ft1)}</select></div>
+                                            <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">VS</div>
+                                            <div style="margin-bottom:5px;"><select id="ko_final_1_t2_ovr" class="result-input" style="width:100%;">${teamOptions(ft2)}</select></div>
+                                            <div class="match-result-final" style="margin-top:8px;">
+                                                <input type="number" class="result-input" id="ko_final_1_g1" min="0" value="0" style="font-size:16px;"> Goles
+                                            </div>
+                                            <div style="text-align:center;margin:5px 0;font-weight:bold;color:#f39c12;">VS</div>
+                                            <div class="match-result-final">
+                                                <input type="number" class="result-input" id="ko_final_1_g2" min="0" value="0" style="font-size:16px;"> Goles
+                                            </div>
+                                            <div class="penalty-section">
+                                                ⚽ Penales: <input type="number" class="result-input" id="ko_final_1_pen1" min="0" value="" placeholder="-" style="width:40px;">
+                                                <span style="margin:0 3px;">-</span>
+                                                <input type="number" class="result-input" id="ko_final_1_pen2" min="0" value="" placeholder="-" style="width:40px;">
+                                                <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
+                                            </div>
+                                            <div class="bracket-actions">
+                                                <button class="bracket-btn btn-save" onclick="guardarEquiposOverride('final',1)">Guardar Equipos</button>
+                                                <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('final',1)">Guardar Resultado</button>
+                                                <button class="bracket-btn btn-cancel" onclick="cancelarEquiposOverride('final',1)">Cancelar</button>
+                                            </div>
+                                        </div>`;
+                                    }
                                     return `<div class="bracket-match bracket-match-editable">
                                         <div class="match-result-final">
                                             <input type="number" class="result-input" id="ko_final_1_g1" min="0" value="0" style="font-size:16px;"> ${ft1}
@@ -1929,13 +2014,14 @@
                                             <input type="number" class="result-input" id="ko_final_1_g2" min="0" value="0" style="font-size:16px;"> ${ft2}
                                         </div>
                                         <div class="penalty-section">
-                                            ⚽ Penales: <input type="number" class="result-input" id="ko_final_1_p1" min="0" value="" placeholder="-" style="width:40px;">
+                                            ⚽ Penales: <input type="number" class="result-input" id="ko_final_1_pen1" min="0" value="" placeholder="-" style="width:40px;">
                                             <span style="margin:0 3px;">-</span>
-                                            <input type="number" class="result-input" id="ko_final_1_p2" min="0" value="" placeholder="-" style="width:40px;">
+                                            <input type="number" class="result-input" id="ko_final_1_pen2" min="0" value="" placeholder="-" style="width:40px;">
                                             <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
                                         </div>
                                         <div class="bracket-actions">
                                             <button class="bracket-btn btn-save" onclick="guardarResultadoKnockout('final',1)">Guardar Resultado</button>
+                                            <button class="bracket-btn btn-edit" onclick="editarEquiposOverride('final',1)">Editar Equipos</button>
                                         </div>
                                     </div>`;
                                 }
@@ -1949,9 +2035,9 @@
                                         <input type="number" class="result-input" id="ko_final_1_g2" min="0" value="0" placeholder="Goles" style="width:45px;">
                                     </div>
                                     <div class="penalty-section">
-                                        ⚽ Penales: <input type="number" class="result-input" id="ko_final_1_p1" min="0" value="" placeholder="-" style="width:40px;">
+                                        ⚽ Penales: <input type="number" class="result-input" id="ko_final_1_pen1" min="0" value="" placeholder="-" style="width:40px;">
                                         <span style="margin:0 3px;">-</span>
-                                        <input type="number" class="result-input" id="ko_final_1_p2" min="0" value="" placeholder="-" style="width:40px;">
+                                        <input type="number" class="result-input" id="ko_final_1_pen2" min="0" value="" placeholder="-" style="width:40px;">
                                         <span style="font-size:10px;color:#999;"> (solo si hay empate)</span>
                                     </div>
                                     <div class="bracket-actions">
